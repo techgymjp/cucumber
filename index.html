@@ -1,0 +1,964 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>きゅうり輪切り名人</title>
+<style>
+  :root {
+    --bg: #f3efe2;
+    --ink: #2f3b23;
+    --green: #3f8f2f;
+    --green-dark: #23561a;
+    --accent: #e8a33d;
+    --panel: rgba(255, 252, 240, 0.96);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Hiragino Maru Gothic ProN", "M PLUS Rounded 1c", "Yu Gothic", "Meiryo", sans-serif;
+    overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  #wrap {
+    position: relative;
+    width: 100vw; height: 100vh; height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #stage {
+    position: relative;
+    width: min(100vw, calc(100dvh * 16 / 9));
+    aspect-ratio: 16 / 9;
+    max-height: 100dvh;
+  }
+  canvas { display: block; width: 100%; height: 100%; border-radius: 12px; }
+  .overlay {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .overlay.hidden { display: none; }
+  .card {
+    background: var(--panel);
+    border: 4px solid var(--green-dark);
+    border-radius: 20px;
+    padding: clamp(14px, 3vw, 28px) clamp(16px, 4vw, 40px);
+    max-width: 640px; width: 100%;
+    max-height: 100%; overflow: auto;
+    text-align: center;
+    box-shadow: 0 10px 0 rgba(35, 86, 26, 0.35);
+  }
+  h1 {
+    margin: 0 0 6px;
+    font-size: clamp(26px, 5vw, 46px);
+    color: var(--green-dark);
+    letter-spacing: 0.05em;
+  }
+  h1 .slice { display: inline-block; animation: spin 3s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .sub { margin: 0 0 14px; font-size: clamp(13px, 2.2vw, 17px); }
+  .rules {
+    text-align: left; margin: 0 auto 16px; padding: 10px 14px;
+    background: #eaf3dc; border-radius: 12px;
+    font-size: clamp(12px, 2vw, 15px); line-height: 1.7;
+  }
+  .rules b { color: var(--green-dark); }
+  table.grade { border-collapse: collapse; margin: 6px auto 0; font-size: clamp(11px, 1.8vw, 14px); }
+  table.grade td { padding: 1px 10px; }
+  button {
+    font: inherit; font-weight: bold;
+    font-size: clamp(18px, 3.2vw, 24px);
+    color: #fff; background: var(--green);
+    border: none; border-radius: 999px;
+    padding: 12px 40px; cursor: pointer;
+    box-shadow: 0 5px 0 var(--green-dark);
+    transition: transform 0.05s;
+  }
+  button:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--green-dark); }
+  button.secondary { background: #8a8a7a; box-shadow: 0 5px 0 #55554a; font-size: clamp(14px, 2.4vw, 18px); padding: 10px 26px; }
+  .best { margin-top: 10px; font-size: 14px; opacity: 0.8; }
+  #mute {
+    position: absolute; top: 10px; right: 10px;
+    width: 44px; height: 44px; padding: 0;
+    font-size: 20px; border-radius: 50%;
+    background: rgba(255,255,255,0.85); color: var(--ink);
+    box-shadow: 0 3px 0 rgba(0,0,0,0.2);
+    z-index: 5;
+  }
+  .rank { font-size: clamp(24px, 4.6vw, 40px); font-weight: bold; color: var(--accent); margin: 4px 0 10px; text-shadow: 0 2px 0 #7a4c0c33; }
+  .score { font-size: clamp(36px, 7vw, 60px); font-weight: bold; color: var(--green-dark); line-height: 1; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin: 14px 0 16px; font-size: clamp(13px, 2.2vw, 16px); }
+  .stats div { background: #eaf3dc; border-radius: 10px; padding: 6px 8px; }
+  .stats b { display: block; font-size: 1.3em; color: var(--green-dark); }
+  .new-record { color: #d1452f; font-weight: bold; animation: blink 0.6s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0.3; } }
+  .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div id="stage">
+    <canvas id="c"></canvas>
+    <button id="mute" title="効果音 ON/OFF" aria-label="効果音 ON/OFF">🔊</button>
+
+    <div id="title" class="overlay">
+      <div class="card">
+        <h1><span class="slice">🥒</span> きゅうり輪切り名人</h1>
+        <p class="sub">制限時間 <b>30秒</b>。すばやく、うすく、切りまくれ！</p>
+        <div class="rules">
+          ・きゅうりは包丁に向かって <b>どんどん流れてくる</b>（だんだん速くなる！）<br>
+          ・<b>クリック / タップ / スペースキー</b> で包丁をトン！<br>
+          ・連打が速いほど <b>うすい輪切り</b> になって高得点<br>
+          ・きゅうりの入れかわり中に切ると <b>空振り</b>でコンボが途切れる
+          <table class="grade">
+            <tr><td>〜1.0mm</td><td><b>神業</b> 100点</td><td>〜2.0mm</td><td><b>極うす</b> 60点</td></tr>
+            <tr><td>〜3.5mm</td><td><b>うすい</b> 30点</td><td>〜6.0mm</td><td>ふつう 10点</td></tr>
+            <tr><td>6.0mm〜</td><td>ぶあつい 2点</td><td colspan="2">3.5mm以下でコンボ継続！</td></tr>
+          </table>
+        </div>
+        <button id="startBtn">スタート！</button>
+        <div class="best" id="bestTitle"></div>
+      </div>
+    </div>
+
+    <div id="result" class="overlay hidden">
+      <div class="card">
+        <div style="font-size:18px">しゅうりょう！</div>
+        <div class="rank" id="rRank"></div>
+        <div class="score"><span id="rScore">0</span><span style="font-size:0.4em"> 点</span></div>
+        <div id="rNew" class="new-record" style="display:none">★ 自己ベスト更新！ ★</div>
+        <div class="stats">
+          <div>切った枚数<b id="rCount">0 枚</b></div>
+          <div>包丁さばき<b id="rSpeed">0 回/秒</b></div>
+          <div>平均の厚さ<b id="rAvg">- mm</b></div>
+          <div>いちばん薄い<b id="rMin">- mm</b></div>
+          <div>神業の数<b id="rGod">0 枚</b></div>
+          <div>最大コンボ<b id="rCombo">0</b></div>
+        </div>
+        <div class="btns">
+          <button id="retryBtn">もう一回！</button>
+          <button id="titleBtn" class="secondary">タイトルへ</button>
+        </div>
+        <div class="best" id="bestResult"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  // ===== 設定 =====
+  const W = 960, H = 540;
+  const GAME_TIME = 30;            // 秒
+  const S = 3.6;                   // 1mm あたりのピクセル
+  const DIAM = 32;                 // きゅうりの直径 (mm)
+  const BOARD_Y = 400;             // まな板の上面
+  const KNIFE_X = 380;
+  const STUB = 12;                 // 手で持つ端っこ (mm)
+  const SPEED_START = 6;           // mm/秒
+  const SPEED_END = 20;            // mm/秒
+  const GRADES = [
+    { max: 1.0, name: '神業！', pts: 100, color: '#e0402a', combo: true },
+    { max: 2.0, name: '極うす！', pts: 60, color: '#e8a33d', combo: true },
+    { max: 3.5, name: 'うすい', pts: 30, color: '#3f8f2f', combo: true },
+    { max: 6.0, name: 'ふつう', pts: 10, color: '#6b7a5e', combo: false },
+    { max: Infinity, name: 'ぶあつい…', pts: 2, color: '#8a6d4f', combo: false },
+  ];
+  const RANKS = [
+    { min: 16000, name: '伝説のきゅうり仙人' },
+    { min: 11000, name: '料亭の花板' },
+    { min: 7000, name: '一人前の板前' },
+    { min: 3500, name: '修行中の若衆' },
+    { min: 1000, name: '見習い' },
+    { min: 0, name: 'きゅうりに負けた人' },
+  ];
+
+  // ===== キャンバス =====
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  function resize() {
+    const r = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+
+  // ===== 効果音 (Web Audio で合成) =====
+  let actx = null, master = null, noiseBuf = null, muted = false;
+  try { muted = localStorage.getItem('cuke-muted') === '1'; } catch (e) {}
+  function initAudio() {
+    if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    actx = new AC();
+    master = actx.createGain();
+    master.gain.value = muted ? 0 : 0.8;
+    master.connect(actx.destination);
+    noiseBuf = actx.createBuffer(1, actx.sampleRate * 0.5, actx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  function env(g, t, a, peak, dec) {
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + a);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + a + dec);
+  }
+  function tone(freq, dur, type = 'sine', vol = 0.3, when = 0, slideTo = null) {
+    if (!actx) return;
+    const t = actx.currentTime + when;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    env(g, t, 0.005, vol, dur);
+    o.connect(g).connect(master);
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+  function noise(dur, filterType, freq, q, vol, when = 0) {
+    if (!actx) return;
+    const t = actx.currentTime + when;
+    const src = actx.createBufferSource();
+    src.buffer = noiseBuf;
+    src.playbackRate.value = 0.9 + Math.random() * 0.2;
+    const f = actx.createBiquadFilter();
+    f.type = filterType; f.frequency.value = freq; f.Q.value = q;
+    const g = actx.createGain();
+    env(g, t, 0.002, vol, dur);
+    src.connect(f).connect(g).connect(master);
+    src.start(t, Math.random() * 0.3); src.stop(t + dur + 0.05);
+  }
+  const sfx = {
+    // シャキッ（きゅうりを切る音）＋ トン（まな板）
+    chop(thick) {
+      noise(0.05, 'highpass', 3500 + Math.random() * 1500, 0.8, 0.35);
+      noise(0.03, 'bandpass', 1800, 2, 0.25, 0.01);
+      tone(150 + Math.random() * 20, 0.09, 'sine', 0.55, 0.012, 70);
+      noise(0.04, 'lowpass', 600, 1, 0.3, 0.012);
+      if (thick > 6) tone(90, 0.12, 'triangle', 0.25, 0.015, 50); // ドスッ
+    },
+    whiff() { // 空振り: スカッ＋トン
+      noise(0.12, 'bandpass', 900, 0.7, 0.18);
+      tone(160, 0.08, 'sine', 0.45, 0.01, 80);
+      tone(220, 0.15, 'square', 0.06, 0.02, 110);
+    },
+    grade(i, combo) {
+      if (i === 0) { // 神業: キラーン
+        const base = 1320 + Math.min(combo, 30) * 12;
+        tone(base, 0.12, 'triangle', 0.12, 0.02);
+        tone(base * 1.5, 0.18, 'triangle', 0.1, 0.07);
+      } else if (i === 1) {
+        tone(990 + Math.min(combo, 30) * 10, 0.1, 'triangle', 0.08, 0.02);
+      }
+    },
+    comboUp(n) { // 10コンボごと
+      [0, 4, 7, 12].forEach((s, k) => tone(660 * Math.pow(2, s / 12), 0.12, 'square', 0.06, k * 0.06));
+    },
+    comboBreak() { tone(330, 0.18, 'sawtooth', 0.06, 0, 160); },
+    newCuke() { // コロコロ
+      noise(0.08, 'bandpass', 400, 3, 0.15);
+      tone(500, 0.06, 'sine', 0.12, 0.0, 700);
+      tone(600, 0.06, 'sine', 0.12, 0.07, 850);
+    },
+    toss() { tone(400, 0.12, 'sine', 0.12, 0, 200); },
+    count() { tone(880, 0.12, 'square', 0.12); },
+    go() { tone(1320, 0.35, 'square', 0.14); tone(1760, 0.35, 'triangle', 0.1, 0.02); },
+    tick() { tone(1500, 0.04, 'square', 0.06); },
+    finish() {
+      tone(1046, 0.25, 'square', 0.12);
+      tone(784, 0.25, 'square', 0.12, 0.18);
+      tone(1046, 0.6, 'square', 0.12, 0.36);
+      tone(1318, 0.6, 'triangle', 0.08, 0.36);
+    },
+    fanfare(good) {
+      const notes = good ? [0, 4, 7, 12, 7, 12, 16] : [0, 4, 7, 12];
+      notes.forEach((s, k) => tone(523 * Math.pow(2, s / 12), 0.2, 'triangle', 0.13, k * 0.11));
+    },
+    click() { tone(700, 0.05, 'triangle', 0.12); },
+  };
+  const muteBtn = document.getElementById('mute');
+  function updateMute() {
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    if (master) master.gain.value = muted ? 0 : 0.8;
+  }
+  muteBtn.addEventListener('pointerdown', e => e.stopPropagation());
+  muteBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    muted = !muted;
+    try { localStorage.setItem('cuke-muted', muted ? '1' : '0'); } catch (err) {}
+    initAudio(); updateMute();
+    sfx.click();
+  });
+  updateMute();
+
+  // ===== ベストスコア =====
+  function loadBest() { try { return +localStorage.getItem('cuke-best') || 0; } catch (e) { return 0; } }
+  function saveBest(v) { try { localStorage.setItem('cuke-best', String(v)); } catch (e) {} }
+
+  // ===== ゲーム状態 =====
+  let state = 'title'; // title | countdown | play | finish | result
+  let g = null;
+  let knifeT = 1;      // 0 = 振り下ろし直後, 1 = 上
+  let shake = 0;
+  let slices = [];     // まな板に積まれた輪切り
+  let flying = [];     // 倒れていく途中の輪切り
+  let popups = [];
+  let particles = [];
+  let stubs = [];      // 捨てられるヘタ
+
+  function newCucumber() {
+    return {
+      len: 140 + Math.random() * 40,   // mm
+      pos: 0,                          // 包丁を越えた長さ (mm)
+      lastCut: 0,                      // 最後に切った位置 (mm)
+      enterT: 0.45,                    // スライドイン中の残り秒
+      bend: (Math.random() - 0.5) * 6,
+      seed: Math.random() * 1000,
+    };
+  }
+
+  function resetGame() {
+    g = {
+      time: GAME_TIME,
+      score: 0,
+      combo: 0, maxCombo: 0,
+      count: 0, chops: 0,
+      sumThick: 0, minThick: Infinity, god: 0,
+      cuke: newCucumber(),
+      countdown: 3.0,
+      lastTick: 4,
+      finishT: 0,
+    };
+    g.cuke.enterT = 0;
+    slices = []; flying = []; popups = []; particles = []; stubs = [];
+    knifeT = 1;
+  }
+
+  function speedNow() {
+    const p = 1 - g.time / GAME_TIME;
+    return SPEED_START + (SPEED_END - SPEED_START) * p;
+  }
+
+  function chop() {
+    if (state !== 'play') return;
+    knifeT = 0;
+    g.chops++;
+    const c = g.cuke;
+    const pending = c.pos - c.lastCut;
+    if (c.enterT > 0 || pending < 0.3) {
+      // 空振り
+      sfx.whiff();
+      if (g.combo >= 3) sfx.comboBreak();
+      g.combo = 0;
+      addPopup('空振り', '#888', KNIFE_X, BOARD_Y - DIAM * S - 30, 22, true);
+      shake = 4;
+      return;
+    }
+    const t = pending;
+    c.lastCut = c.pos;
+    const gi = GRADES.findIndex(gr => t < gr.max);
+    const gr = GRADES[gi];
+    if (gr.combo) {
+      g.combo++;
+      if (g.combo % 10 === 0) sfx.comboUp(g.combo);
+    } else {
+      if (g.combo >= 3) sfx.comboBreak();
+      g.combo = 0;
+    }
+    g.maxCombo = Math.max(g.maxCombo, g.combo);
+    const mult = gr.combo ? Math.min(3, 1 + Math.floor(g.combo / 10) * 0.5) : 1;
+    const pts = Math.round(gr.pts * mult);
+    g.score += pts;
+    g.count++;
+    g.sumThick += t;
+    g.minThick = Math.min(g.minThick, t);
+    if (gi === 0) g.god++;
+
+    sfx.chop(t);
+    sfx.grade(gi, g.combo);
+    shake = t > 6 ? 6 : 2;
+
+    // 切れた輪切りを倒す
+    flying.push({
+      x: KNIFE_X - t * S / 2 - 2,
+      thick: t,
+      age: 0,
+      tx: 40 + Math.random() * (KNIFE_X - 170),
+      ty: BOARD_Y + 10 + Math.random() * 100,
+      rot: Math.random() * Math.PI * 2,
+    });
+    // 水しぶき
+    for (let i = 0; i < 6; i++) {
+      particles.push({
+        x: KNIFE_X, y: BOARD_Y - Math.random() * DIAM * S,
+        vx: -60 - Math.random() * 160, vy: -80 - Math.random() * 180,
+        life: 0.4 + Math.random() * 0.3, age: 0,
+      });
+    }
+    addPopup(`${gr.name} ${t.toFixed(1)}mm`, gr.color, KNIFE_X - 60, BOARD_Y - DIAM * S - 40, gi <= 1 ? 30 : 24, true);
+    if (mult > 1) {
+      popups = popups.filter(p => !p.multMsg);
+      addPopup(`+${pts} ×${mult}`, '#d1452f', KNIFE_X - 60, BOARD_Y - DIAM * S - 4, 18);
+      popups[popups.length - 1].multMsg = true;
+    }
+
+    // きゅうりの終わり
+    if (c.len - c.lastCut <= STUB + 0.3) finishCucumber();
+  }
+
+  function finishCucumber() {
+    stubs.push({ x: KNIFE_X, len: g.cuke.len - g.cuke.lastCut, age: 0, seed: g.cuke.seed });
+    sfx.toss();
+    g.cuke = newCucumber();
+    setTimeout(() => { if (state === 'play') sfx.newCuke(); }, 120);
+  }
+
+  function addPopup(text, color, x, y, size, chopMsg = false) {
+    if (chopMsg) popups = popups.filter(p => !p.chopMsg);
+    popups.push({ text, color, x, y, size, age: 0, chopMsg });
+  }
+
+  // ===== 入力 =====
+  function onPress(e) {
+    initAudio();
+    if (state === 'play') { e && e.preventDefault && e.preventDefault(); chop(); }
+  }
+  canvas.addEventListener('pointerdown', onPress);
+  window.addEventListener('keydown', e => {
+    if (e.repeat) return;
+    if (e.code === 'Space' || e.code === 'Enter' || /^Key[A-Z]$/.test(e.code)) {
+      if (state === 'play') { e.preventDefault(); onPress(e); }
+      else if ((state === 'title' || state === 'result') && (e.code === 'Space' || e.code === 'Enter')) {
+        e.preventDefault(); startGame();
+      }
+    }
+  });
+
+  const titleEl = document.getElementById('title');
+  const resultEl = document.getElementById('result');
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('retryBtn').addEventListener('click', startGame);
+  document.getElementById('titleBtn').addEventListener('click', () => {
+    initAudio(); sfx.click();
+    resultEl.classList.add('hidden');
+    titleEl.classList.remove('hidden');
+    state = 'title';
+    showBest();
+  });
+
+  function showBest() {
+    const b = loadBest();
+    const txt = b ? `自己ベスト: ${b.toLocaleString()} 点` : '';
+    document.getElementById('bestTitle').textContent = txt;
+  }
+
+  function startGame() {
+    initAudio();
+    sfx.click();
+    titleEl.classList.add('hidden');
+    resultEl.classList.add('hidden');
+    resetGame();
+    state = 'countdown';
+  }
+
+  function endGame() {
+    state = 'finish';
+    g.finishT = 1.4;
+    sfx.finish();
+  }
+
+  function showResult() {
+    state = 'result';
+    const best = loadBest();
+    const isNew = g.score > best;
+    if (isNew) saveBest(g.score);
+    const rank = RANKS.find(r => g.score >= r.min);
+    document.getElementById('rRank').textContent = `称号：${rank.name}`;
+    document.getElementById('rScore').textContent = g.score.toLocaleString();
+    document.getElementById('rCount').textContent = `${g.count} 枚`;
+    document.getElementById('rSpeed').textContent = `${(g.chops / GAME_TIME).toFixed(1)} 回/秒`;
+    document.getElementById('rAvg').textContent = g.count ? `${(g.sumThick / g.count).toFixed(2)} mm` : '- mm';
+    document.getElementById('rMin').textContent = g.count ? `${g.minThick.toFixed(2)} mm` : '- mm';
+    document.getElementById('rGod').textContent = `${g.god} 枚`;
+    document.getElementById('rCombo').textContent = `${g.maxCombo}`;
+    document.getElementById('rNew').style.display = isNew && g.score > 0 ? 'block' : 'none';
+    document.getElementById('bestResult').textContent = `自己ベスト: ${Math.max(best, g.score).toLocaleString()} 点`;
+    resultEl.classList.remove('hidden');
+    sfx.fanfare(isNew || g.score >= 7000);
+  }
+
+  // ===== 更新 =====
+  function update(dt) {
+    knifeT = Math.min(1, knifeT + dt * 9);
+    shake = Math.max(0, shake - dt * 40);
+
+    if (state === 'countdown') {
+      g.countdown -= dt;
+      const n = Math.ceil(g.countdown);
+      if (n < g.lastTick && n >= 1) { g.lastTick = n; sfx.count(); }
+      if (g.countdown <= 0) { state = 'play'; sfx.go(); addPopup('はじめ！', '#d1452f', W / 2 - 60, 200, 56); }
+    } else if (state === 'play') {
+      g.time -= dt;
+      const sec = Math.ceil(g.time);
+      if (g.time > 0 && g.time <= 5 && sec < g.lastTick) { g.lastTick = sec; sfx.tick(); }
+      if (g.time > 5) g.lastTick = 6;
+      const c = g.cuke;
+      if (c.enterT > 0) {
+        c.enterT -= dt;
+      } else {
+        c.pos = Math.min(c.len - STUB, c.pos + speedNow() * dt);
+      }
+      if (g.time <= 0) { g.time = 0; endGame(); }
+    } else if (state === 'finish') {
+      g.finishT -= dt;
+      if (g.finishT <= 0) showResult();
+    }
+
+    for (const f of flying) f.age += dt;
+    for (let i = flying.length - 1; i >= 0; i--) {
+      if (flying[i].age >= 0.35) {
+        slices.push(flying[i]);
+        flying.splice(i, 1);
+      }
+    }
+    if (slices.length > 140) slices.splice(0, slices.length - 140);
+    for (const p of popups) p.age += dt;
+    popups = popups.filter(p => p.age < 0.8);
+    for (const p of particles) { p.age += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 900 * dt; }
+    particles = particles.filter(p => p.age < p.life);
+    for (const s of stubs) s.age += dt;
+    stubs = stubs.filter(s => s.age < 0.8);
+  }
+
+  // ===== 描画 =====
+  function drawBackground() {
+    // 壁
+    const wall = ctx.createLinearGradient(0, 0, 0, BOARD_Y);
+    wall.addColorStop(0, '#fbf6e6'); wall.addColorStop(1, '#efe6cc');
+    ctx.fillStyle = wall;
+    ctx.fillRect(0, 0, W, H);
+    // タイル
+    ctx.strokeStyle = 'rgba(180, 165, 120, 0.25)';
+    ctx.lineWidth = 2;
+    for (let x = 0; x <= W; x += 60) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 300); ctx.stroke(); }
+    for (let y = 0; y <= 300; y += 60) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    // 調理台
+    ctx.fillStyle = '#b9b2a0';
+    ctx.fillRect(0, 300, W, H - 300);
+    // まな板
+    const by = 300;
+    const bg = ctx.createLinearGradient(0, by, 0, H);
+    bg.addColorStop(0, '#e9c98f'); bg.addColorStop(1, '#d4a865');
+    ctx.fillStyle = bg;
+    roundRect(20, by + 20, W - 40, H - by - 10, 18);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(140, 95, 40, 0.25)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 9; i++) {
+      ctx.beginPath();
+      const y = by + 40 + i * 22;
+      ctx.moveTo(40, y);
+      for (let x = 40; x < W - 40; x += 40) ctx.lineTo(x, y + Math.sin(x * 0.02 + i) * 3);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#c4955a';
+    ctx.fillRect(20, H - 14, W - 40, 14);
+  }
+
+  function roundRect(x, y, w, h, r) {
+    r = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // 輪切りの断面（上から見た図）
+  function drawSliceFace(x, y, r, thick, rot) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    // 薄いほど透ける
+    const alpha = Math.max(0.45, Math.min(1, 0.4 + thick * 0.18));
+    ctx.globalAlpha = alpha;
+    // 影
+    ctx.fillStyle = 'rgba(80, 50, 10, 0.18)';
+    ctx.beginPath(); ctx.ellipse(2, 3 + thick * 0.6, r, r * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+    // 側面の厚み
+    ctx.fillStyle = '#2f6a22';
+    ctx.beginPath(); ctx.ellipse(0, thick * 0.6, r, r * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+    // 皮
+    ctx.fillStyle = '#3d7f2b';
+    ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+    // 果肉
+    ctx.fillStyle = '#d8efb0';
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.86, r * 0.86 * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+    // 種の部分
+    ctx.fillStyle = '#c3e396';
+    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.5, r * 0.5 * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#f4fbe0';
+    for (let k = 0; k < 3; k++) {
+      const a = k * Math.PI * 2 / 3 + 0.5;
+      for (let j = 0; j < 2; j++) {
+        const rr = r * (0.22 + j * 0.14);
+        ctx.beginPath();
+        ctx.ellipse(Math.cos(a) * rr, Math.sin(a) * rr * 0.62, r * 0.07, r * 0.045, a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  function cucumberPath(x0, x1, top, bot, roundL, roundR) {
+    const h = bot - top, r = h / 2;
+    ctx.beginPath();
+    if (roundL) { ctx.moveTo(x0 + r, top); } else { ctx.moveTo(x0, top); }
+    ctx.lineTo(x1 - (roundR ? r : 0), top);
+    if (roundR) ctx.arc(x1 - r, top + r, r, -Math.PI / 2, Math.PI / 2);
+    else ctx.lineTo(x1, bot);
+    ctx.lineTo(x0 + (roundL ? r : 0), bot);
+    if (roundL) ctx.arc(x0 + r, top + r, r, Math.PI / 2, Math.PI * 1.5);
+    else ctx.lineTo(x0, top);
+    ctx.closePath();
+  }
+
+  function fillCucumberBody(x0, x1, top, bot, seed) {
+    const gr = ctx.createLinearGradient(0, top, 0, bot);
+    gr.addColorStop(0, '#5aa83f');
+    gr.addColorStop(0.25, '#7cc35a');
+    gr.addColorStop(0.55, '#3f8f2f');
+    gr.addColorStop(1, '#23561a');
+    ctx.fillStyle = gr;
+    ctx.fill();
+    // イボイボ
+    ctx.save();
+    ctx.clip();
+    ctx.fillStyle = 'rgba(230, 255, 200, 0.55)';
+    for (let i = 0; i < 80; i++) {
+      const px = x0 + ((Math.sin(seed + i * 12.9898) * 43758.5453) % 1 + 1) % 1 * (x1 - x0);
+      const py = top + ((Math.sin(seed + i * 78.233) * 12345.678) % 1 + 1) % 1 * (bot - top);
+      ctx.beginPath(); ctx.arc(px, py, 1.6, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(x0, top + (bot - top) * 0.15, x1 - x0, (bot - top) * 0.1);
+    ctx.restore();
+  }
+
+  function drawCucumber() {
+    if (!g) return;
+    const c = g.cuke;
+    const h = DIAM * S;
+    const top = BOARD_Y - h, bot = BOARD_Y;
+    const enterOff = c.enterT > 0 ? (c.enterT / 0.45) * 500 : 0;
+    const pending = c.pos - c.lastCut;
+    // 包丁より右側（まだ切っていない本体）
+    const xCutFace = KNIFE_X - pending * S + enterOff;
+    const xRight = KNIFE_X + (c.len - c.pos) * S + enterOff;
+    const startRound = c.lastCut === 0;
+    cucumberPath(xCutFace, xRight, top, bot, startRound, true);
+    fillCucumberBody(xCutFace, xRight, top, bot, c.seed);
+    // 切り口
+    if (!startRound) {
+      ctx.fillStyle = '#cfe9a3';
+      ctx.beginPath();
+      ctx.ellipse(xCutFace, (top + bot) / 2, 4, h / 2 - 1, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // ヘタ
+    ctx.fillStyle = '#6b5a2a';
+    ctx.beginPath(); ctx.ellipse(xRight + 4, (top + bot) / 2, 6, 9, 0, 0, Math.PI * 2); ctx.fill();
+    // 包丁位置の目安線（切る前の部分）
+    drawHand(xRight - 26, top, h);
+  }
+
+  function drawHand(x, top, h) {
+    // 猫の手（左手）
+    ctx.save();
+    ctx.fillStyle = '#f5cfa8';
+    ctx.strokeStyle = '#c99a72';
+    ctx.lineWidth = 2;
+    roundRect(x, top - 34, 120, 54, 26);
+    ctx.fill(); ctx.stroke();
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.ellipse(x + 10 + i * 4, top - 8 + i * 8, 14, 10, 0.3, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    }
+    // 腕
+    ctx.fillStyle = '#f5cfa8';
+    ctx.fillRect(x + 90, top - 30, 200, 44);
+    ctx.fillStyle = '#4a7bb5';
+    ctx.fillRect(x + 150, top - 36, 200, 56);
+    ctx.restore();
+  }
+
+  function drawKnife() {
+    // 振り下ろしアニメ: knifeT 0 → 下, 1 → 上
+    const h = DIAM * S;
+    const e = knifeT < 0.25 ? 0 : (knifeT - 0.25) / 0.75;
+    const lift = 20 + (1 - Math.pow(1 - e, 2)) * 60;
+    const blendDown = knifeT < 0.25;
+    const bladeBottom = blendDown ? BOARD_Y : BOARD_Y - h - lift;
+    const bladeTop = bladeBottom - 200;
+    ctx.save();
+    // 刃（少し斜めから見た包丁）
+    const skew = 26;
+    const grd = ctx.createLinearGradient(KNIFE_X - 4, 0, KNIFE_X + skew + 4, 0);
+    grd.addColorStop(0, '#f6f8fa');
+    grd.addColorStop(0.5, '#b7c0c8');
+    grd.addColorStop(1, '#8a949c');
+    ctx.fillStyle = grd;
+    ctx.strokeStyle = '#59636b';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(KNIFE_X - 2, bladeBottom);
+    ctx.lineTo(KNIFE_X - 2, bladeTop + 20);
+    ctx.lineTo(KNIFE_X + skew, bladeTop);
+    ctx.lineTo(KNIFE_X + skew, bladeBottom - 40);
+    ctx.closePath();
+    ctx.fill(); ctx.stroke();
+    // 刃先のハイライト
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(KNIFE_X - 1, bladeBottom - 2); ctx.lineTo(KNIFE_X - 1, bladeTop + 26); ctx.stroke();
+    // 柄
+    ctx.fillStyle = '#5a3a1e';
+    roundRect(KNIFE_X + 2, bladeTop - 110, 22, 118, 8);
+    ctx.fill();
+    ctx.fillStyle = '#c8b28a';
+    ctx.fillRect(KNIFE_X + 2, bladeTop - 4, 22, 10);
+    // 右手
+    ctx.fillStyle = '#f5cfa8';
+    ctx.strokeStyle = '#c99a72';
+    roundRect(KNIFE_X - 14, bladeTop - 90, 50, 70, 20);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#f5cfa8';
+    ctx.fillRect(KNIFE_X + 4, bladeTop - 260, 40, 175);
+    ctx.fillStyle = '#4a7bb5';
+    ctx.fillRect(KNIFE_X - 2, bladeTop - 300, 52, 130);
+    ctx.restore();
+    // 振り下ろし時のエフェクト
+    if (blendDown) {
+      ctx.strokeStyle = `rgba(255,255,255,${0.8 - knifeT * 3})`;
+      ctx.lineWidth = 3;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(KNIFE_X + 40 + i * 10, BOARD_Y - h - 60 + i * 20);
+        ctx.lineTo(KNIFE_X + 40 + i * 10, BOARD_Y - h + 10 + i * 20);
+        ctx.stroke();
+      }
+    }
+  }
+
+  function drawFlying() {
+    const h = DIAM * S;
+    for (const f of flying) {
+      const p = Math.min(1, f.age / 0.35);
+      const ease = 1 - Math.pow(1 - p, 3);
+      if (p < 0.4) {
+        // まだ立っている状態で倒れはじめ
+        const a = (p / 0.4) * -Math.PI / 2.4;
+        ctx.save();
+        ctx.translate(f.x - f.thick * S / 2, BOARD_Y);
+        ctx.rotate(a);
+        ctx.fillStyle = '#3f8f2f';
+        ctx.fillRect(-Math.max(1.5, f.thick * S), -h, Math.max(1.5, f.thick * S), h);
+        ctx.fillStyle = '#d8efb0';
+        ctx.fillRect(-Math.max(1.5, f.thick * S) + 0.5, -h + 3, Math.max(1, f.thick * S - 1), h - 6);
+        ctx.restore();
+      } else {
+        const x = f.x + (f.tx - f.x) * ease;
+        const y = (BOARD_Y - h / 2) + (f.ty - (BOARD_Y - h / 2)) * ease - Math.sin(p * Math.PI) * 40;
+        drawSliceFace(x, y, (h / 2) * (0.7 + 0.3 * ease) * 0.55, f.thick, f.rot * ease);
+      }
+    }
+  }
+
+  function drawSlices() {
+    for (const s of slices) drawSliceFace(s.tx, s.ty, DIAM * S / 2 * 0.55, s.thick, s.rot);
+  }
+
+  function drawStubs() {
+    const h = DIAM * S;
+    for (const s of stubs) {
+      const p = s.age / 0.8;
+      const x = KNIFE_X + 20 + p * 600;
+      const y = BOARD_Y - h + (-Math.sin(p * Math.PI) * 120) + p * 60;
+      ctx.save();
+      ctx.globalAlpha = 1 - p;
+      ctx.translate(x, y + h / 2);
+      ctx.rotate(p * 6);
+      cucumberPath(-s.len * S / 2, s.len * S / 2, -h / 2, h / 2, false, true);
+      fillCucumberBody(-s.len * S / 2, s.len * S / 2, -h / 2, h / 2, s.seed);
+      ctx.restore();
+    }
+  }
+
+  function drawParticles() {
+    ctx.fillStyle = 'rgba(200, 240, 170, 0.9)';
+    for (const p of particles) {
+      ctx.globalAlpha = 1 - p.age / p.life;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawPopups() {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const p of popups) {
+      const k = p.age / 0.8;
+      ctx.globalAlpha = 1 - k * k;
+      ctx.font = `bold ${p.size}px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif`;
+      ctx.lineWidth = 5;
+      ctx.strokeStyle = '#fff';
+      const y = p.y - k * 40;
+      ctx.strokeText(p.text, p.x, y);
+      ctx.fillStyle = p.color;
+      ctx.fillText(p.text, p.x, y);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawHUD() {
+    if (!g) return;
+    ctx.textBaseline = 'middle';
+    // タイマー
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    roundRect(16, 14, 210, 56, 14); ctx.fill();
+    ctx.fillStyle = g.time <= 5 && state === 'play' ? '#d1452f' : '#2f3b23';
+    ctx.font = 'bold 34px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`⏱ ${g.time.toFixed(1)}`, 30, 43);
+    // タイムバー
+    ctx.fillStyle = '#ddd';
+    ctx.fillRect(16, 74, 210, 8);
+    ctx.fillStyle = g.time <= 5 ? '#d1452f' : '#3f8f2f';
+    ctx.fillRect(16, 74, 210 * (g.time / GAME_TIME), 8);
+
+    // スコア
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    roundRect(W - 300, 14, 230, 56, 14); ctx.fill();
+    ctx.fillStyle = '#23561a';
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 34px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
+    ctx.fillText(`${g.score.toLocaleString()} 点`, W - 84, 43);
+
+    // コンボ & 速度
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 20px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
+    if (g.combo >= 2) {
+      const mult = Math.min(3, 1 + Math.floor(g.combo / 10) * 0.5);
+      ctx.fillStyle = '#d1452f';
+      ctx.fillText(`${g.combo} コンボ${mult > 1 ? `  ×${mult}` : ''}`, 250, 32);
+    }
+    ctx.fillStyle = '#5c6b4f';
+    ctx.font = '16px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
+    ctx.fillText(`きゅうりの速さ ${speedNow().toFixed(1)} mm/秒   切った枚数 ${g.count} 枚`, 250, 58);
+
+    // 厚さゲージ（いま切ったら何mmか）
+    if (state === 'play' && g.cuke.enterT <= 0) {
+      const pending = g.cuke.pos - g.cuke.lastCut;
+      const gi = GRADES.findIndex(gr => pending < gr.max);
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 16px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
+      ctx.fillStyle = GRADES[gi].color;
+      ctx.fillText(`いま切ると ${pending.toFixed(1)}mm`, KNIFE_X - 60, BOARD_Y + 28);
+    }
+  }
+
+  function drawCountdown() {
+    if (state !== 'countdown') return;
+    const n = Math.ceil(g.countdown);
+    const frac = g.countdown - Math.floor(g.countdown);
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = `bold ${120 + frac * 60}px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif`;
+    ctx.lineWidth = 10; ctx.strokeStyle = '#fff';
+    ctx.strokeText(String(n), W / 2, H / 2 - 20);
+    ctx.fillStyle = '#3f8f2f';
+    ctx.fillText(String(n), W / 2, H / 2 - 20);
+    ctx.font = 'bold 26px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
+    ctx.lineWidth = 6;
+    ctx.strokeText('クリック / タップ / スペースで切る！', W / 2, H / 2 + 90);
+    ctx.fillStyle = '#23561a';
+    ctx.fillText('クリック / タップ / スペースで切る！', W / 2, H / 2 + 90);
+    ctx.restore();
+  }
+
+  function drawFinish() {
+    if (state !== 'finish') return;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const sc = 1 + Math.max(0, g.finishT - 1.1) * 3;
+    ctx.translate(W / 2, H / 2);
+    ctx.scale(sc, sc);
+    ctx.font = 'bold 90px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
+    ctx.lineWidth = 10; ctx.strokeStyle = '#fff';
+    ctx.strokeText('そこまで！', 0, 0);
+    ctx.fillStyle = '#d1452f';
+    ctx.fillText('そこまで！', 0, 0);
+    ctx.restore();
+  }
+
+  function drawTitleScene() {
+    // タイトル画面の背景用: 輪切りを並べておく
+    if (slices.length === 0) {
+      for (let i = 0; i < 26; i++) {
+        slices.push({ tx: 60 + Math.random() * (W - 120), ty: BOARD_Y + 10 + Math.random() * 110, thick: 0.6 + Math.random() * 3, rot: Math.random() * 6 });
+      }
+    }
+  }
+
+  function render() {
+    ctx.save();
+    if (shake > 0) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+    drawBackground();
+    if (state === 'title') drawTitleScene();
+    drawSlices();
+    if (g && state !== 'title') {
+      drawCucumber();
+      drawStubs();
+      drawFlying();
+      drawKnife();
+      drawParticles();
+    }
+    ctx.restore();
+    if (g && state !== 'title') {
+      drawPopups();
+      drawHUD();
+      drawCountdown();
+      drawFinish();
+    }
+  }
+
+  let last = performance.now();
+  function loop(t) {
+    const dt = Math.min(0.05, (t - last) / 1000);
+    last = t;
+    update(dt);
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  resize();
+  showBest();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
