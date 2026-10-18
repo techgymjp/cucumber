@@ -10,7 +10,9 @@ WordPress 投稿用メタ情報（本番公開時に設定）
   Claude Code でゲーム制作に挑戦。「きゅうりの輪切りゲームを作って」という日本語の一言から、効果音つきブラウザゲームの実装・動作テスト・GitHub への公開までを開発者目線で振り返ります。つまずいた GitHub の権限エラーの解決法も紹介。
 カテゴリ案: AI開発 / ゲーム制作
 タグ案: Claude Code, 生成AI, ゲーム制作, JavaScript, Web Audio API, GitHub
-アイキャッチ: images/play.png
+アイキャッチ / OGP画像（SNSシェア用）: ogp.png（リポジトリ直下、1200×630）
+  ※ ゲームの「シェア」はこの記事のURLを付けるため、SNSのカードにはこの記事のOGP画像が表示される
+  ※ ogp.png のURL: https://raw.githubusercontent.com/techgymjp/cucumber/claude/quirky-pascal-j7nf6e/ogp.png
 公開前に差し替える箇所: 【ゲームの公開URL】（2か所）
 -->
 
@@ -22,7 +24,7 @@ Claude Code でのゲーム制作は、この日本語の一文から始まり�
 
 この記事では、Claude Code に何を任せ、どこで人間がつまずいたのかを、開発者目線で正直に振り返ります。
 
-![きゅうり輪切り名人のプレイ画面。流れてくるきゅうりを包丁で輪切りにしていく](images/play.png)
+![きゅうり輪切り名人のプレイ画面。流れてくるきゅうりを包丁で輪切りにしていく](../ogp.png)
 
 ▶ 実際に遊べます：【ゲームの公開URL】
 
