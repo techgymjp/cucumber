@@ -648,8 +648,10 @@
   }
 
   // ===== シェア =====
+  // シェアには techgym.jp の紹介記事の URL を付ける
+  const SHARE_URL = 'https://techgym.jp/column/claude-code-game-cucumber/';
   function shareUrl() {
-    return /^https?:/.test(location.protocol) ? location.href.split('#')[0] : '';
+    return SHARE_URL;
   }
   let shareText = '';
   function setupShare(rankName) {
