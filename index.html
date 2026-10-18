@@ -23,6 +23,8 @@
     -webkit-user-select: none; user-select: none;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    overscroll-behavior: none;
+    -webkit-touch-callout: none;
   }
   #wrap {
     position: relative;
@@ -97,9 +99,86 @@
   .new-record { color: #d1452f; font-weight: bold; animation: blink 0.6s steps(2) infinite; }
   @keyframes blink { 50% { opacity: 0.3; } }
   .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .share { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+  .share-label { font-size: 13px; font-weight: bold; color: var(--green-dark); }
+  .sbtn {
+    display: inline-flex; align-items: center; gap: 6px;
+    font: inherit; font-size: 14px; font-weight: bold; line-height: 1;
+    color: #fff; text-decoration: none;
+    border: none; border-radius: 999px; padding: 9px 16px; cursor: pointer;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.25);
+  }
+  .sbtn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.25); }
+  .sbtn:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .sbtn svg { width: 15px; height: 15px; fill: currentColor; }
+  .sbtn.x { background: #111; }
+  .sbtn.line { background: #06c755; }
+  .sbtn.fb { background: #1877f2; }
+  .sbtn.more { background: var(--accent); }
+  .sbtn.copy { background: #6b7a5e; }
+
+  /* スマホ横画面など、高さが低いとき */
+  @media (max-height: 500px) {
+    .card { padding: 10px 18px; border-width: 3px; box-shadow: 0 5px 0 rgba(35, 86, 26, 0.35); }
+    h1 { font-size: 24px; margin-bottom: 2px; }
+    .sub { font-size: 13px; margin-bottom: 6px; }
+    .rules { font-size: 12px; line-height: 1.5; padding: 6px 10px; margin-bottom: 8px; }
+    table.grade { font-size: 11px; margin-top: 2px; }
+    button { font-size: 18px; padding: 8px 32px; }
+    button.secondary { font-size: 14px; padding: 8px 20px; }
+    .best { margin-top: 4px; font-size: 12px; }
+    .rank { font-size: 22px; margin: 2px 0 4px; }
+    .score { font-size: 34px; }
+    .stats { grid-template-columns: repeat(3, 1fr); gap: 4px 8px; margin: 8px 0 10px; font-size: 12px; }
+    .stats div { padding: 3px 6px; }
+    #mute { width: 36px; height: 36px; font-size: 16px; top: 6px; right: 6px; }
+    .result-head { display: none; }
+    #result .rank { font-size: 20px; margin: 0 0 2px; }
+    #result .score { font-size: 30px; }
+    #result .stats { margin: 6px 0 8px; }
+    #result .stats b { font-size: 1.2em; }
+    #result .btns button { font-size: 16px; padding: 6px 26px; }
+    #result button.secondary { font-size: 13px; padding: 6px 18px; }
+    #result .best { margin-top: 2px; }
+    .share { margin-top: 8px; gap: 6px; }
+    .sbtn { font-size: 12px; padding: 7px 12px; }
+  }
+
+  /* 縦向きのスマホ用: 横向きのお願い */
+  #rotate {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; padding: 24px;
+    background: var(--bg); text-align: center;
+  }
+  #rotate[hidden] { display: none; }
+  #rotate .phone {
+    width: 64px; height: 108px;
+    border: 6px solid var(--green-dark); border-radius: 14px;
+    position: relative;
+    animation: turn 2s ease-in-out infinite;
+  }
+  #rotate .phone::after {
+    content: "🥒"; position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; transform: rotate(-45deg);
+  }
+  @keyframes turn { 0%, 20% { transform: rotate(0); } 50%, 80% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
+  #rotate p { margin: 0; font-size: 20px; font-weight: bold; color: var(--green-dark); line-height: 1.5; }
+  #rotate small { font-size: 13px; opacity: 0.75; line-height: 1.6; }
+  @media (prefers-reduced-motion: reduce) {
+    #rotate .phone { animation: none; transform: rotate(-90deg); }
+    h1 .slice { animation: none; }
+  }
 </style>
 </head>
 <body>
+<div id="rotate" hidden>
+  <div class="phone" aria-hidden="true"></div>
+  <p>スマホを横向きにして<br>遊んでね！</p>
+  <small>画面の回転ロックがオンのときは、オフにしてください。</small>
+  <button id="portraitBtn" class="secondary">縦のまま遊ぶ</button>
+</div>
 <div id="wrap">
   <div id="stage">
     <canvas id="c"></canvas>
@@ -127,7 +206,7 @@
 
     <div id="result" class="overlay hidden">
       <div class="card">
-        <div style="font-size:18px">しゅうりょう！</div>
+        <div class="result-head" style="font-size:18px">しゅうりょう！</div>
         <div class="rank" id="rRank"></div>
         <div class="score"><span id="rScore">0</span><span style="font-size:0.4em"> 点</span></div>
         <div id="rNew" class="new-record" style="display:none">★ 自己ベスト更新！ ★</div>
@@ -142,6 +221,14 @@
         <div class="btns">
           <button id="retryBtn">もう一回！</button>
           <button id="titleBtn" class="secondary">タイトルへ</button>
+        </div>
+        <div class="share" aria-label="結果をシェア">
+          <span class="share-label">結果をシェア</span>
+          <a id="shareX" class="sbtn x" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.9 2H22l-6.8 7.8L23 22h-6.2l-4.9-6.4L6.3 22H3.2l7.3-8.3L1 2h6.3l4.4 5.9L18.9 2Zm-1.1 18.1h1.7L6.3 3.8H4.5l13.3 16.3Z"/></svg>ポスト</a>
+          <a id="shareLine" class="sbtn line" href="#" target="_blank" rel="noopener">LINE</a>
+          <a id="shareFb" class="sbtn fb" href="#" target="_blank" rel="noopener">Facebook</a>
+          <button id="shareMore" class="sbtn more" type="button" hidden>その他</button>
+          <button id="shareCopy" class="sbtn copy" type="button">コピー</button>
         </div>
         <div class="best" id="bestResult"></div>
       </div>
@@ -443,8 +530,59 @@
 
   const titleEl = document.getElementById('title');
   const resultEl = document.getElementById('result');
-  document.getElementById('startBtn').addEventListener('click', startGame);
-  document.getElementById('retryBtn').addEventListener('click', startGame);
+  // スマホ: スタート時にフルスクリーン＋横向き固定を試す（対応ブラウザのみ。iPhone は回転の案内で対応）
+  const isTouch = window.matchMedia('(pointer: coarse)').matches;
+  function goLandscape() {
+    if (!isTouch) return;
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!req || document.fullscreenElement || document.webkitFullscreenElement) return lockLandscape();
+    try {
+      const r = req.call(el, { navigationUI: 'hide' });
+      if (r && r.then) r.then(lockLandscape, () => {});
+    } catch (e) {}
+  }
+  function lockLandscape() {
+    try {
+      if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+    } catch (e) {}
+  }
+  function startFromButton() { goLandscape(); startGame(); }
+  document.getElementById('startBtn').addEventListener('click', startFromButton);
+  document.getElementById('retryBtn').addEventListener('click', startFromButton);
+
+  // 縦向きのスマホでは案内を出し、プレイ中なら一時停止
+  const rotateEl = document.getElementById('rotate');
+  let allowPortrait = false;
+  let paused = false;
+  function needsRotate() {
+    return isTouch && !allowPortrait && window.innerHeight > window.innerWidth && window.innerWidth < 700;
+  }
+  function checkOrientation() {
+    const show = needsRotate();
+    rotateEl.hidden = !show;
+    if (show && (state === 'play' || state === 'countdown')) {
+      paused = true;
+    } else if (!show && paused) {
+      paused = false;
+      resumeCountdown();
+    }
+    resize();
+  }
+  function resumeCountdown() {
+    if (!g || (state !== 'play' && state !== 'countdown')) return;
+    g.countdown = 3.0;
+    g.lastTick = 4;
+    g.resumed = true;
+    state = 'countdown';
+  }
+  document.getElementById('portraitBtn').addEventListener('click', () => {
+    initAudio(); sfx.click();
+    allowPortrait = true;
+    checkOrientation();
+  });
+  window.addEventListener('resize', checkOrientation);
+  window.addEventListener('orientationchange', () => setTimeout(checkOrientation, 200));
   document.getElementById('titleBtn').addEventListener('click', () => {
     initAudio(); sfx.click();
     resultEl.classList.add('hidden');
@@ -490,20 +628,77 @@
     document.getElementById('rCombo').textContent = `${g.maxCombo}`;
     document.getElementById('rNew').style.display = isNew && g.score > 0 ? 'block' : 'none';
     document.getElementById('bestResult').textContent = `自己ベスト: ${Math.max(best, g.score).toLocaleString()} 点`;
+    setupShare(rank.name);
     resultEl.classList.remove('hidden');
     sfx.fanfare(isNew || g.score >= 7000);
   }
+
+  // ===== シェア =====
+  function shareUrl() {
+    return /^https?:/.test(location.protocol) ? location.origin + location.pathname : '';
+  }
+  let shareText = '';
+  function setupShare(rankName) {
+    const avg = g.count ? `平均${(g.sumThick / g.count).toFixed(2)}mm` : '';
+    shareText = `🥒きゅうり輪切り名人で ${g.score.toLocaleString()}点！\n` +
+      `称号「${rankName}」｜${g.count}枚を${avg}で輪切り（神業${g.god}枚）\n` +
+      `#きゅうり輪切り名人`;
+    const url = shareUrl();
+    const enc = encodeURIComponent;
+    document.getElementById('shareX').href =
+      `https://twitter.com/intent/tweet?text=${enc(shareText)}${url ? `&url=${enc(url)}` : ''}`;
+    document.getElementById('shareLine').href =
+      `https://line.me/R/share?text=${enc(shareText + (url ? `\n${url}` : ''))}`;
+    const fb = document.getElementById('shareFb');
+    fb.hidden = !url;
+    fb.href = `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`;
+    document.getElementById('shareMore').hidden = !navigator.share;
+  }
+  document.getElementById('shareMore').addEventListener('click', () => {
+    const data = { title: 'きゅうり輪切り名人', text: shareText };
+    const url = shareUrl();
+    if (url) data.url = url;
+    navigator.share(data).catch(() => {});
+  });
+  const copyBtn = document.getElementById('shareCopy');
+  copyBtn.addEventListener('click', () => {
+    const url = shareUrl();
+    const text = shareText + (url ? `\n${url}` : '');
+    const done = () => {
+      sfx.click();
+      copyBtn.textContent = 'コピーしました';
+      setTimeout(() => { copyBtn.textContent = 'コピー'; }, 1600);
+    };
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      ta.remove();
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  });
 
   // ===== 更新 =====
   function update(dt) {
     knifeT = Math.min(1, knifeT + dt * 9);
     shake = Math.max(0, shake - dt * 40);
 
+    if (paused) return;
     if (state === 'countdown') {
       g.countdown -= dt;
       const n = Math.ceil(g.countdown);
       if (n < g.lastTick && n >= 1) { g.lastTick = n; sfx.count(); }
-      if (g.countdown <= 0) { state = 'play'; sfx.go(); addPopup('はじめ！', '#d1452f', W / 2 - 60, 200, 56); }
+      if (g.countdown <= 0) {
+        state = 'play';
+        g.lastTick = Math.min(6, Math.ceil(g.time) + 1);
+        sfx.go();
+        addPopup(g.resumed ? 'さいかい！' : 'はじめ！', '#d1452f', W / 2 - 60, 200, 56);
+        g.resumed = false;
+      }
     } else if (state === 'play') {
       g.time -= dt;
       const sec = Math.ceil(g.time);
@@ -956,6 +1151,7 @@
   }
 
   resize();
+  checkOrientation();
   showBest();
   requestAnimationFrame(loop);
 })();
