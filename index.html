@@ -4,6 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>きゅうり輪切り名人</title>
+<meta name="description" content="30秒でどれだけ薄く切れる？ 流れてくるきゅうりを連打で輪切りにする、効果音つきブラウザゲーム。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="きゅうり輪切り名人">
+<meta property="og:title" content="きゅうり輪切り名人">
+<meta property="og:description" content="30秒でどれだけ薄く切れる？ 流れてくるきゅうりを連打で輪切りにする、効果音つきブラウザゲーム。">
+<!-- OGP 画像は絶対URLが必要。Vercel のドメインが決まったら https://<ドメイン>/ogp.png に差し替え可 -->
+<meta property="og:image" content="https://raw.githubusercontent.com/techgymjp/cucumber/claude/quirky-pascal-j7nf6e/ogp.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="きゅうり輪切り名人のプレイ画面">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="きゅうり輪切り名人">
+<meta name="twitter:description" content="30秒でどれだけ薄く切れる？ 流れてくるきゅうりを連打で輪切りにする、効果音つきブラウザゲーム。">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/techgymjp/cucumber/claude/quirky-pascal-j7nf6e/ogp.png">
 <style>
   :root {
     --bg: #f3efe2;
@@ -224,10 +238,10 @@
         </div>
         <div class="share" aria-label="結果をシェア">
           <span class="share-label">結果をシェア</span>
+          <button id="shareMore" class="sbtn more" type="button" hidden>シェア</button>
           <a id="shareX" class="sbtn x" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.9 2H22l-6.8 7.8L23 22h-6.2l-4.9-6.4L6.3 22H3.2l7.3-8.3L1 2h6.3l4.4 5.9L18.9 2Zm-1.1 18.1h1.7L6.3 3.8H4.5l13.3 16.3Z"/></svg>ポスト</a>
           <a id="shareLine" class="sbtn line" href="#" target="_blank" rel="noopener">LINE</a>
           <a id="shareFb" class="sbtn fb" href="#" target="_blank" rel="noopener">Facebook</a>
-          <button id="shareMore" class="sbtn more" type="button" hidden>その他</button>
           <button id="shareCopy" class="sbtn copy" type="button">コピー</button>
         </div>
         <div class="best" id="bestResult"></div>
@@ -635,20 +649,20 @@
 
   // ===== シェア =====
   function shareUrl() {
-    return /^https?:/.test(location.protocol) ? location.origin + location.pathname : '';
+    return /^https?:/.test(location.protocol) ? location.href.split('#')[0] : '';
   }
   let shareText = '';
   function setupShare(rankName) {
     const avg = g.count ? `平均${(g.sumThick / g.count).toFixed(2)}mm` : '';
-    shareText = `🥒きゅうり輪切り名人で ${g.score.toLocaleString()}点！\n` +
-      `称号「${rankName}」｜${g.count}枚を${avg}で輪切り（神業${g.god}枚）\n` +
-      `#きゅうり輪切り名人`;
+    // X で弾かれないよう、ちゃぶ台返しと同じく1行・絵文字なしの文にする
+    shareText = `きゅうり輪切り名人で${g.score.toLocaleString()}点！ 称号「${rankName}」` +
+      `${g.count ? ` ${g.count}枚を${avg}で輪切り` : ''} #きゅうり輪切り名人`;
     const url = shareUrl();
     const enc = encodeURIComponent;
     document.getElementById('shareX').href =
       `https://twitter.com/intent/tweet?text=${enc(shareText)}${url ? `&url=${enc(url)}` : ''}`;
     document.getElementById('shareLine').href =
-      `https://line.me/R/share?text=${enc(shareText + (url ? `\n${url}` : ''))}`;
+      `https://line.me/R/share?text=${enc(shareText + (url ? ` ${url}` : ''))}`;
     const fb = document.getElementById('shareFb');
     fb.hidden = !url;
     fb.href = `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`;
