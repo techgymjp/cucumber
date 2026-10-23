@@ -11,34 +11,36 @@
   // 挑戦する野菜。前の野菜で UNLOCK_SCORE 点以上を取ると次の野菜に挑戦できる
   // diam: 直径 (mm) / len: 1 本の長さ (mm) / speed: 流れる速さ (mm/秒、開始→終了) / stub: 手で持つ端っこ (mm)
   // press: 切れるまでに押し続ける時間 (ミリ秒)。0 ならタップで切れる。かたい・太い野菜は長押しが必要
+  // mul: 1 枚の点数の倍率。長押しの野菜は切れる枚数が少ないので、そのぶん 1 枚の点数を上げる
+  // 流れる速さは「押す時間＋指を離して押し直す時間」で 1 枚あたり 1〜3mm くらいになるようにしている
   const UNLOCK_SCORE = 7000;
   const VEGS = [
     {
-      id: 'cucumber', diam: 32, len: [140, 180], speed: [6, 20], stub: 12, press: 0,
+      id: 'cucumber', diam: 32, len: [140, 180], speed: [6, 20], stub: 12, press: 0, mul: 1,
       body: ['#5aa83f', '#7cc35a', '#3f8f2f', '#23561a'], bumps: 'rgba(230, 255, 200, 0.55)',
       side: '#2f6a22', skin: '#3d7f2b', flesh: '#d8efb0', core: '#c3e396', seed: '#f4fbe0', face: 'cucumber',
       cut: '#cfe9a3', end: 'stem', endColor: '#6b5a2a', juice: 'rgba(200, 240, 170, 0.9)',
     },
     {
-      id: 'eggplant', diam: 44, len: [130, 160], speed: [7, 22], stub: 18, press: 0,
+      id: 'eggplant', diam: 44, len: [130, 160], speed: [5, 15], stub: 18, press: 120, mul: 1.4,
       body: ['#6a3580', '#8c4fa3', '#45205a', '#25102f'], bumps: null,
       side: '#2a1236', skin: '#4a1f5c', flesh: '#f4eed4', core: '#ece2bd', seed: '#a8925c', face: 'eggplant',
       cut: '#efe6c6', end: 'calyx', endColor: '#2f4a25', juice: 'rgba(240, 232, 200, 0.9)',
     },
     {
-      id: 'carrot', diam: 30, len: [150, 190], speed: [6, 18], stub: 14, press: 80,
+      id: 'carrot', diam: 30, len: [150, 190], speed: [3.5, 10], stub: 14, press: 200, mul: 2,
       body: ['#f9a54c', '#fdb968', '#e8791c', '#b6540b'], bumps: 'rgba(150, 70, 10, 0.35)',
       side: '#b6540b', skin: '#d96a12', flesh: '#f28a25', core: '#f8ae55', seed: '#fbc77f', face: 'carrot',
       cut: '#f6a04a', end: 'leaves', endColor: '#4f8f2f', juice: 'rgba(250, 170, 90, 0.9)',
     },
     {
-      id: 'burdock', diam: 18, len: [230, 290], speed: [5, 15], stub: 14, press: 120,
+      id: 'burdock', diam: 18, len: [90, 110], speed: [1, 3], stub: 14, press: 1000, mul: 9,
       body: ['#9a7a55', '#b08e66', '#76583a', '#4f3a24'], bumps: 'rgba(70, 45, 20, 0.35)',
       side: '#5a4026', skin: '#6e5236', flesh: '#efe2c4', core: '#dcc79c', seed: '#c9b07e', face: 'burdock',
       cut: '#e8d8b4', end: 'root', endColor: '#5a4026', juice: 'rgba(235, 220, 190, 0.9)',
     },
     {
-      id: 'daikon', diam: 60, len: [150, 180], speed: [4, 12], stub: 20, press: 200,
+      id: 'daikon', diam: 60, len: [60, 75], speed: [0.5, 1.5], stub: 20, press: 2000, mul: 15,
       body: ['#ffffff', '#fbfbf6', '#e8eadf', '#c9cdbb'], bumps: 'rgba(150, 150, 130, 0.22)',
       side: '#d3d7c6', skin: '#eef0e6', flesh: '#fcfcf6', core: '#f1f4e6', seed: '#e3e7d6', face: 'daikon',
       cut: '#f6f8ee', end: 'leaves', endColor: '#5a9a3a', juice: 'rgba(245, 248, 238, 0.95)',
@@ -167,8 +169,13 @@
       tone(600, 0.06, 'sine', 0.12, 0.07, 850);
     },
     press() { // ググッ（かたい野菜に刃が入る）
-      noise(Math.max(0.08, veg.press / 1000), 'bandpass', 700, 1.5, 0.12);
-      tone(110, Math.max(0.08, veg.press / 1000), 'sawtooth', 0.04, 0, 90);
+      const d = Math.min(0.25, Math.max(0.08, veg.press / 1000));
+      noise(d, 'bandpass', 700, 1.5, 0.12);
+      tone(110, d, 'sawtooth', 0.04, 0, 90);
+    },
+    saw() { // ギコッ（長押しのあいだ刃が少しずつ入っていく）
+      noise(0.12, 'bandpass', 500 + Math.random() * 300, 2, 0.1);
+      tone(90 + Math.random() * 30, 0.1, 'sawtooth', 0.03, 0, 70);
     },
     shallow() { // 浅い！
       tone(300, 0.1, 'square', 0.06, 0, 200);
@@ -292,7 +299,7 @@
     }
     g.maxCombo = Math.max(g.maxCombo, g.combo);
     const mult = gr.combo ? Math.min(3, 1 + Math.floor(g.combo / 10) * 0.5) : 1;
-    const pts = Math.round(gr.pts * mult);
+    const pts = Math.round(gr.pts * mult * veg.mul);
     g.score += pts;
     g.count++;
     g.sumThick += t;
@@ -368,13 +375,20 @@
   function updatePress() {
     if (!pressing || pressing.done) return;
     if (state !== 'play') { pressing = null; return; }
-    if (performance.now() - pressing.t0 >= veg.press) {
+    const el = performance.now() - pressing.t0;
+    if (el >= veg.press) {
       pressing.done = true;
       chop();
+    } else if (el - (pressing.sawAt || 0) >= 300) {
+      // 長く押す野菜は、押しているあいだ刃の音を鳴らし続ける
+      pressing.sawAt = el;
+      if (el > 0) sfx.saw();
     }
   }
   const pressProgress = () => (pressing && !pressing.done ? Math.min(1, (performance.now() - pressing.t0) / veg.press) : 0);
   canvas.addEventListener('pointerdown', onPress);
+  // 長押しでメニューなどが出ないようにする
+  canvas.addEventListener('contextmenu', e => e.preventDefault());
   canvas.addEventListener('pointerup', onRelease);
   canvas.addEventListener('pointercancel', onRelease);
   canvas.addEventListener('pointerleave', onRelease);
@@ -552,7 +566,8 @@
   function renderTexts() {
     I18N.apply();
     let rules = tr('title.rules', { veg: tr('veg.lc.' + veg.id), ctl: tr(NATIVE ? 'ctl.tc' : 'ctl.kb') });
-    if (veg.press) rules += tr('rule.press', { veg: tr('veg.lc.' + veg.id), why: tr('why.' + veg.id) });
+    if (veg.press) rules += tr('rule.press', { veg: tr('veg.lc.' + veg.id), why: tr('why.' + veg.id), sec: veg.press / 1000 });
+    if (veg.mul > 1) rules += tr('rule.mul', { veg: tr('veg.lc.' + veg.id), m: veg.mul });
     document.getElementById('rulesText').innerHTML = rules;
     renderVegSel();
     showBest();
