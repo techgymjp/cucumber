@@ -1,0 +1,8 @@
+{
+  "appId": "jp.techgym.cucumber",
+  "appName": "きゅうり輪切り名人",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#f3efe2"
+  }
+}

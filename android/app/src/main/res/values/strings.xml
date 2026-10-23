@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">きゅうり輪切り名人</string>
+    <string name="title_activity_main">きゅうり輪切り名人</string>
+    <string name="package_name">jp.techgym.cucumber</string>
+    <string name="custom_url_scheme">jp.techgym.cucumber</string>
+    <!-- AdMob のアプリ ID。いまは Google 公式のテスト用アプリ ID。AdMob でアプリを追加したら本物の ID に差し替える -->
+    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+</resources>
