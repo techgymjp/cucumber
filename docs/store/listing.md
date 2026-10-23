@@ -90,6 +90,12 @@ Chop fast, slice thin! A 30-second knife game with five vegetables to master.
 
 ---
 
+## リリースノート
+
+`release-notes.txt` の内容を、本番リリースの「リリースノート」欄にそのまま貼り付けてください（各言語 500 文字以内）。
+
+---
+
 ## Play Console「アプリのコンテンツ」の回答の目安
 
 - **プライバシー ポリシー**: https://techgym.jp/privacy-policy/

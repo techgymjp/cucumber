@@ -1,0 +1,16 @@
+<ja-JP>
+きゅうり輪切り名人、配信開始！
+・30秒で、きゅうりをどこまで薄く速く切れるかに挑戦
+・きゅうり、茄子、人参、牛蒡、大根の5種類の野菜。かたい野菜は切れるまで長押し
+・7,000点を取ると次の野菜に挑戦できる
+・厚さをミリ単位で判定、コンボで点数アップ
+・自己ベストの保存、結果のシェア、日本語・英語に対応
+</ja-JP>
+<en-US>
+Cucumber Slice Master is here!
+• See how thin and fast you can slice in 30 seconds
+• Five vegetables: cucumber, eggplant, carrot, burdock root and daikon. Hold the knife down on the tough ones
+• Score 7,000 points to unlock the next vegetable
+• Every slice is measured in millimetres, and combos boost your score
+• Personal bests, result sharing, English and Japanese
+</en-US>
