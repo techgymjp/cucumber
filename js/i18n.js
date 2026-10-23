@@ -9,10 +9,10 @@ const I18N = (() => {
       'rotate.portrait': '縦のまま遊ぶ',
       'mute': '効果音 ON/OFF',
       'title.sub': '制限時間 <b>30秒</b>。すばやく、うすく、切りまくれ！',
-      'title.rules': '・きゅうりは包丁に向かって <b>どんどん流れてくる</b>（だんだん速くなる！）<br>' +
+      'title.rules': '・{veg}は包丁に向かって <b>どんどん流れてくる</b>（だんだん速くなる！）<br>' +
         '・<b>{ctl}</b> で包丁をトン！<br>' +
         '・連打が速いほど <b>うすい輪切り</b> になって高得点<br>' +
-        '・きゅうりの入れかわり中に切ると <b>空振り</b>でコンボが途切れる',
+        '・次の{veg}が入ってくる間に切ると <b>空振り</b>でコンボが途切れる',
       'ctl.kb': 'クリック / タップ / スペースキー',
       'ctl.tc': '画面をタップ',
       'grade.table': '<tr><td>〜1.0mm</td><td><b>神業</b> 100点</td><td>〜2.0mm</td><td><b>極うす</b> 60点</td></tr>' +
@@ -38,7 +38,7 @@ const I18N = (() => {
       'res.new': '★ 自己ベスト更新！ ★',
       'res.count': '切った枚数', 'res.speed': '包丁さばき', 'res.avg': '平均の厚さ',
       'res.min': 'いちばん薄い', 'res.god': '神業の数', 'res.combo': '最大コンボ',
-      'res.rank': '称号：{r}',
+      'res.rank': '{veg}｜称号：{r}',
       'unit.slices': '{n} 枚',
       'unit.cps': '{n} 回/秒',
       'res.retry': 'もう一回！',
@@ -49,7 +49,7 @@ const I18N = (() => {
       'share.copy': 'コピー',
       'share.copied': 'コピーしました',
       'share.dialog': '結果をシェア',
-      'share.text': 'きゅうり輪切り名人で{score}点！ 称号「{rank}」{detail} #きゅうり輪切り名人',
+      'share.text': 'きゅうり輪切り名人{tag}で{score}点！ 称号「{rank}」{detail} #きゅうり輪切り名人',
       'share.detail': ' {n}枚を平均{avg}mmで輪切り',
       'grade.0': '神業！', 'grade.1': '極うす！', 'grade.2': 'うすい', 'grade.3': 'ふつう', 'grade.4': 'ぶあつい…',
       'rank.0': '伝説のきゅうり仙人', 'rank.1': '料亭の花板', 'rank.2': '一人前の板前',
@@ -60,10 +60,22 @@ const I18N = (() => {
       'pop.finish': 'そこまで！',
       'hud.pt': '{n} 点',
       'hud.combo': '{n} コンボ',
-      'hud.info': 'きゅうりの速さ {speed} mm/秒   切った枚数 {n} 枚',
+      'hud.info': '流れる速さ {speed} mm/秒   切った枚数 {n} 枚',
       'hud.next': 'いま切ると {mm}mm',
       'hint.kb': 'クリック / タップ / スペースで切る！',
       'hint.tc': '画面をタップして切る！',
+      'hint.press': '切れるまで長押し！',
+      'veg.cucumber': 'きゅうり', 'veg.eggplant': '茄子', 'veg.burdock': '牛蒡', 'veg.daikon': '大根',
+      'veg.lc.cucumber': 'きゅうり', 'veg.lc.eggplant': '茄子', 'veg.lc.burdock': '牛蒡', 'veg.lc.daikon': '大根',
+      'veg.tag': '【{veg}】',
+      'veg.pick': '挑戦する野菜',
+      'veg.lock': '{prev}で{n}点',
+      'veg.best': '{n}点',
+      'rule.press': '<br>・{veg}は{why}ので、<b>切れるまで長押し</b>（離すと「浅い！」で切れない）',
+      'why.burdock': 'かたい', 'why.daikon': '太くてかたい',
+      'pop.shallow': '浅い！',
+      'res.next': '{veg}に挑戦！',
+      'res.unlocked': '🔓 {veg}に挑戦！',
     },
     en: {
       'doc.title': 'Cucumber Slice Master',
@@ -73,10 +85,10 @@ const I18N = (() => {
       'rotate.portrait': 'Play in portrait',
       'mute': 'Sound on / off',
       'title.sub': '<b>30 seconds</b>. Slice fast, slice thin, slice it all!',
-      'title.rules': '• The cucumber <b>keeps sliding</b> toward the knife (and it speeds up!)<br>' +
+      'title.rules': '• The {veg} <b>keeps sliding</b> toward the knife (and it speeds up!)<br>' +
         '• <b>{ctl}</b> to bring the knife down<br>' +
         '• The faster you chop, the <b>thinner the slices</b> and the higher your score<br>' +
-        '• Chopping while the next cucumber slides in is a <b>miss</b> and breaks your combo',
+        '• Chopping while the next {veg} slides in is a <b>miss</b> and breaks your combo',
       'ctl.kb': 'Click / tap / Space',
       'ctl.tc': 'Tap the screen',
       'grade.table': '<tr><td>under 1.0mm</td><td><b>Godlike</b> 100 pts</td><td>under 2.0mm</td><td><b>Paper-thin</b> 60 pts</td></tr>' +
@@ -102,7 +114,7 @@ const I18N = (() => {
       'res.new': '★ New personal best! ★',
       'res.count': 'Slices', 'res.speed': 'Knife speed', 'res.avg': 'Average thickness',
       'res.min': 'Thinnest', 'res.god': 'Godlike slices', 'res.combo': 'Max combo',
-      'res.rank': 'Title: {r}',
+      'res.rank': '{veg} | Title: {r}',
       'unit.slices': '{n}',
       'unit.cps': '{n} chops/s',
       'res.retry': 'Play again!',
@@ -113,7 +125,7 @@ const I18N = (() => {
       'share.copy': 'Copy',
       'share.copied': 'Copied',
       'share.dialog': 'Share your result',
-      'share.text': 'I scored {score} pts in Cucumber Slice Master! Title: {rank}{detail} #CucumberSliceMaster',
+      'share.text': 'I scored {score} pts in Cucumber Slice Master{tag}! Title: {rank}{detail} #CucumberSliceMaster',
       'share.detail': ' / {n} slices, {avg}mm on average',
       'grade.0': 'GODLIKE!', 'grade.1': 'PAPER-THIN!', 'grade.2': 'Thin', 'grade.3': 'Normal', 'grade.4': 'Chunky…',
       'rank.0': 'Legendary Cucumber Sage', 'rank.1': 'Head Chef', 'rank.2': 'Skilled Cook',
@@ -128,6 +140,18 @@ const I18N = (() => {
       'hud.next': 'Chop now: {mm}mm',
       'hint.kb': 'Click / tap / Space to chop!',
       'hint.tc': 'Tap the screen to chop!',
+      'hint.press': 'Hold until it cuts through!',
+      'veg.cucumber': 'Cucumber', 'veg.eggplant': 'Eggplant', 'veg.burdock': 'Burdock', 'veg.daikon': 'Daikon',
+      'veg.lc.cucumber': 'cucumber', 'veg.lc.eggplant': 'eggplant', 'veg.lc.burdock': 'burdock root', 'veg.lc.daikon': 'daikon',
+      'veg.tag': ' ({veg})',
+      'veg.pick': 'Choose a vegetable',
+      'veg.lock': '{n} pts with {prev}',
+      'veg.best': '{n} pts',
+      'rule.press': '<br>• The {veg} is {why}, so <b>hold until it cuts through</b> (let go early and it only scratches)',
+      'why.burdock': 'tough', 'why.daikon': 'thick and tough',
+      'pop.shallow': 'Not deep enough!',
+      'res.next': 'Try {veg}!',
+      'res.unlocked': '🔓 Try {veg}!',
     },
   };
 

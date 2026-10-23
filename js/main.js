@@ -5,12 +5,39 @@
   const W = 960, H = 540;
   const GAME_TIME = 30;            // 秒
   const S = 3.6;                   // 1mm あたりのピクセル
-  const DIAM = 32;                 // きゅうりの直径 (mm)
   const BOARD_Y = 400;             // まな板の上面
   const KNIFE_X = 380;
-  const STUB = 12;                 // 手で持つ端っこ (mm)
-  const SPEED_START = 6;           // mm/秒
-  const SPEED_END = 20;            // mm/秒
+  // 挑戦する野菜。前の野菜で UNLOCK_SCORE 点以上を取ると次の野菜に挑戦できる
+  // diam: 直径 (mm) / len: 1 本の長さ (mm) / speed: 流れる速さ (mm/秒、開始→終了) / stub: 手で持つ端っこ (mm)
+  // press: 切れるまでに押し続ける時間 (ミリ秒)。0 ならタップで切れる。かたい・太い野菜は長押しが必要
+  const UNLOCK_SCORE = 7000;
+  const VEGS = [
+    {
+      id: 'cucumber', diam: 32, len: [140, 180], speed: [6, 20], stub: 12, press: 0,
+      body: ['#5aa83f', '#7cc35a', '#3f8f2f', '#23561a'], bumps: 'rgba(230, 255, 200, 0.55)',
+      side: '#2f6a22', skin: '#3d7f2b', flesh: '#d8efb0', core: '#c3e396', seed: '#f4fbe0', face: 'cucumber',
+      cut: '#cfe9a3', end: 'stem', endColor: '#6b5a2a', juice: 'rgba(200, 240, 170, 0.9)',
+    },
+    {
+      id: 'eggplant', diam: 44, len: [130, 160], speed: [7, 22], stub: 18, press: 0,
+      body: ['#6a3580', '#8c4fa3', '#45205a', '#25102f'], bumps: null,
+      side: '#2a1236', skin: '#4a1f5c', flesh: '#f4eed4', core: '#ece2bd', seed: '#a8925c', face: 'eggplant',
+      cut: '#efe6c6', end: 'calyx', endColor: '#2f4a25', juice: 'rgba(240, 232, 200, 0.9)',
+    },
+    {
+      id: 'burdock', diam: 18, len: [230, 290], speed: [5, 15], stub: 14, press: 120,
+      body: ['#9a7a55', '#b08e66', '#76583a', '#4f3a24'], bumps: 'rgba(70, 45, 20, 0.35)',
+      side: '#5a4026', skin: '#6e5236', flesh: '#efe2c4', core: '#dcc79c', seed: '#c9b07e', face: 'burdock',
+      cut: '#e8d8b4', end: 'root', endColor: '#5a4026', juice: 'rgba(235, 220, 190, 0.9)',
+    },
+    {
+      id: 'daikon', diam: 60, len: [150, 180], speed: [4, 12], stub: 20, press: 200,
+      body: ['#ffffff', '#fbfbf6', '#e8eadf', '#c9cdbb'], bumps: 'rgba(150, 150, 130, 0.22)',
+      side: '#d3d7c6', skin: '#eef0e6', flesh: '#fcfcf6', core: '#f1f4e6', seed: '#e3e7d6', face: 'daikon',
+      cut: '#f6f8ee', end: 'leaves', endColor: '#5a9a3a', juice: 'rgba(245, 248, 238, 0.95)',
+    },
+  ];
+  let veg = VEGS[0];
   const GRADES = [
     { max: 1.0, pts: 100, color: '#e0402a', combo: true },
     { max: 2.0, pts: 60, color: '#e8a33d', combo: true },
@@ -128,6 +155,14 @@
       tone(500, 0.06, 'sine', 0.12, 0.0, 700);
       tone(600, 0.06, 'sine', 0.12, 0.07, 850);
     },
+    press() { // ググッ（かたい野菜に刃が入る）
+      noise(Math.max(0.08, veg.press / 1000), 'bandpass', 700, 1.5, 0.12);
+      tone(110, Math.max(0.08, veg.press / 1000), 'sawtooth', 0.04, 0, 90);
+    },
+    shallow() { // 浅い！
+      tone(300, 0.1, 'square', 0.06, 0, 200);
+      noise(0.05, 'highpass', 2500, 0.8, 0.12);
+    },
     toss() { tone(400, 0.12, 'sine', 0.12, 0, 200); },
     count() { tone(880, 0.12, 'square', 0.12); },
     go() { tone(1320, 0.35, 'square', 0.14); tone(1760, 0.35, 'triangle', 0.1, 0.02); },
@@ -159,9 +194,20 @@
   });
   updateMute();
 
-  // ===== ベストスコア =====
-  function loadBest() { try { return +localStorage.getItem('cuke-best') || 0; } catch (e) { return 0; } }
-  function saveBest(v) { try { localStorage.setItem('cuke-best', String(v)); } catch (e) {} }
+  // ===== ベストスコア・挑戦できる野菜（端末に保存） =====
+  const bestKey = v => (v.id === 'cucumber' ? 'cuke-best' : `cuke-best-${v.id}`);
+  function loadBest(v = veg) { try { return +localStorage.getItem(bestKey(v)) || 0; } catch (e) { return 0; } }
+  function saveBest(val, v = veg) { try { localStorage.setItem(bestKey(v), String(val)); } catch (e) {} }
+  // 挑戦できる野菜の数。自己ベストからも判定するので、保存が消えても大きくは戻らない
+  function unlockedCount() {
+    let n = 1;
+    while (n < VEGS.length && loadBest(VEGS[n - 1]) >= UNLOCK_SCORE) n++;
+    return n;
+  }
+  try {
+    const savedVeg = VEGS.findIndex(v => v.id === localStorage.getItem('cuke-veg'));
+    if (savedVeg > 0 && savedVeg < unlockedCount()) veg = VEGS[savedVeg];
+  } catch (e) {}
 
   // ===== ゲーム状態 =====
   let state = 'title'; // title | countdown | play | finish | result
@@ -176,7 +222,7 @@
 
   function newCucumber() {
     return {
-      len: 140 + Math.random() * 40,   // mm
+      len: veg.len[0] + Math.random() * (veg.len[1] - veg.len[0]),   // mm
       pos: 0,                          // 包丁を越えた長さ (mm)
       lastCut: 0,                      // 最後に切った位置 (mm)
       enterT: 0.45,                    // スライドイン中の残り秒
@@ -204,7 +250,7 @@
 
   function speedNow() {
     const p = 1 - g.time / GAME_TIME;
-    return SPEED_START + (SPEED_END - SPEED_START) * p;
+    return veg.speed[0] + (veg.speed[1] - veg.speed[0]) * p;
   }
 
   function chop() {
@@ -218,7 +264,7 @@
       sfx.whiff();
       if (g.combo >= 3) sfx.comboBreak();
       g.combo = 0;
-      addPopup(tr('pop.miss'), '#888', KNIFE_X, BOARD_Y - DIAM * S - 30, 22, true);
+      addPopup(tr('pop.miss'), '#888', KNIFE_X, BOARD_Y - veg.diam * S - 30, 22, true);
       shake = 4;
       return;
     }
@@ -258,20 +304,20 @@
     // 水しぶき
     for (let i = 0; i < 6; i++) {
       particles.push({
-        x: KNIFE_X, y: BOARD_Y - Math.random() * DIAM * S,
+        x: KNIFE_X, y: BOARD_Y - Math.random() * veg.diam * S,
         vx: -60 - Math.random() * 160, vy: -80 - Math.random() * 180,
         life: 0.4 + Math.random() * 0.3, age: 0,
       });
     }
-    addPopup(`${tr('grade.' + gi)} ${t.toFixed(1)}mm`, gr.color, KNIFE_X - 60, BOARD_Y - DIAM * S - 40, gi <= 1 ? 30 : 24, true);
+    addPopup(`${tr('grade.' + gi)} ${t.toFixed(1)}mm`, gr.color, KNIFE_X - 60, BOARD_Y - veg.diam * S - 40, gi <= 1 ? 30 : 24, true);
     if (mult > 1) {
       popups = popups.filter(p => !p.multMsg);
-      addPopup(`+${pts} ×${mult}`, '#d1452f', KNIFE_X - 60, BOARD_Y - DIAM * S - 4, 18);
+      addPopup(`+${pts} ×${mult}`, '#d1452f', KNIFE_X - 60, BOARD_Y - veg.diam * S - 4, 18);
       popups[popups.length - 1].multMsg = true;
     }
 
     // きゅうりの終わり
-    if (c.len - c.lastCut <= STUB + 0.3) finishCucumber();
+    if (c.len - c.lastCut <= veg.stub + 0.3) finishCucumber();
   }
 
   function finishCucumber() {
@@ -287,11 +333,44 @@
   }
 
   // ===== 入力 =====
+  // かたい野菜は、押しているあいだ包丁が沈み、press ミリ秒押し続けると切れる
+  let pressing = null; // { t0, done }
   function onPress(e) {
     initAudio();
-    if (state === 'play') { e && e.preventDefault && e.preventDefault(); chop(); }
+    if (state !== 'play') return;
+    e && e.preventDefault && e.preventDefault();
+    if (!veg.press) { chop(); return; }
+    if (pressing) return;
+    pressing = { t0: performance.now(), done: false };
+    sfx.press();
   }
+  function onRelease() {
+    if (!pressing) return;
+    const p = pressing;
+    pressing = null;
+    if (p.done || state !== 'play') return;
+    // 切れる前に離した
+    knifeT = 0.3;
+    sfx.shallow();
+    addPopup(tr('pop.shallow'), '#8a6d4f', KNIFE_X, BOARD_Y - veg.diam * S - 30, 22, true);
+  }
+  function updatePress() {
+    if (!pressing || pressing.done) return;
+    if (state !== 'play') { pressing = null; return; }
+    if (performance.now() - pressing.t0 >= veg.press) {
+      pressing.done = true;
+      chop();
+    }
+  }
+  const pressProgress = () => (pressing && !pressing.done ? Math.min(1, (performance.now() - pressing.t0) / veg.press) : 0);
   canvas.addEventListener('pointerdown', onPress);
+  canvas.addEventListener('pointerup', onRelease);
+  canvas.addEventListener('pointercancel', onRelease);
+  canvas.addEventListener('pointerleave', onRelease);
+  window.addEventListener('keyup', e => {
+    if (e.code === 'Space' || e.code === 'Enter' || /^Key[A-Z]$/.test(e.code)) onRelease();
+  });
+  window.addEventListener('blur', onRelease);
   window.addEventListener('keydown', e => {
     if (e.repeat) return;
     if (e.code === 'Space' || e.code === 'Enter' || /^Key[A-Z]$/.test(e.code)) {
@@ -454,10 +533,47 @@
   document.getElementById('adPrivacyLink').addEventListener('click', e => { e.preventDefault(); Ads.showPrivacyOptions(); });
   // アプリではキー操作の案内を出さない
   // 言語に合わせてタイトル画面の文言を出す（アプリではキー操作の案内を出さない）
+  const vegName = v => tr('veg.' + v.id);
   function renderTexts() {
     I18N.apply();
-    document.getElementById('rulesText').innerHTML = tr('title.rules', { ctl: tr(NATIVE ? 'ctl.tc' : 'ctl.kb') });
+    let rules = tr('title.rules', { veg: tr('veg.lc.' + veg.id), ctl: tr(NATIVE ? 'ctl.tc' : 'ctl.kb') });
+    if (veg.press) rules += tr('rule.press', { veg: vegName(veg), why: tr('why.' + veg.id) });
+    document.getElementById('rulesText').innerHTML = rules;
+    renderVegSel();
     showBest();
+  }
+  // タイトル画面の野菜選び。まだ挑戦できない野菜には条件を出す
+  const vegSelEl = document.getElementById('vegSel');
+  function renderVegSel() {
+    const open = unlockedCount();
+    vegSelEl.textContent = '';
+    VEGS.forEach((v, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'vegBtn' + (v === veg ? ' on' : '') + (i >= open ? ' locked' : '');
+      b.disabled = i >= open;
+      const sw = document.createElement('span');
+      sw.className = 'vegSwatch';
+      sw.style.background = `radial-gradient(circle, ${v.core} 0 30%, ${v.flesh} 31% 72%, ${v.skin} 73%)`;
+      const name = document.createElement('span');
+      name.className = 'vegName';
+      name.textContent = (i >= open ? '🔒 ' : '') + vegName(v);
+      const sub = document.createElement('span');
+      sub.className = 'vegSub';
+      const best = loadBest(v);
+      sub.textContent = i >= open
+        ? tr('veg.lock', { prev: vegName(VEGS[i - 1]), n: fmt(UNLOCK_SCORE) })
+        : best ? tr('veg.best', { n: fmt(best) }) : '';
+      b.append(sw, name, sub);
+      b.addEventListener('click', () => { initAudio(); sfx.click(); selectVeg(v); });
+      vegSelEl.appendChild(b);
+    });
+  }
+  function selectVeg(v) {
+    veg = v;
+    try { localStorage.setItem('cuke-veg', v.id); } catch (e) {}
+    slices = [];
+    renderTexts();
   }
   document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => {
     initAudio(); sfx.click();
@@ -465,12 +581,18 @@
   }));
   I18N.onChange(renderTexts);
 
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    const next = VEGS[VEGS.indexOf(veg) + 1];
+    if (!next) return;
+    selectVeg(next);
+    document.getElementById('retryBtn').click(); // 「もう一回！」と同じ流れ（広告の回数も共通）
+  });
   document.getElementById('titleBtn').addEventListener('click', () => {
     initAudio(); sfx.click();
     resultEl.classList.add('hidden');
     titleEl.classList.remove('hidden');
     state = 'title';
-    showBest();
+    renderTexts();
   });
 
   function showBest() {
@@ -498,9 +620,16 @@
     state = 'result';
     const best = loadBest();
     const isNew = g.score > best;
+    const openBefore = unlockedCount();
     if (isNew) saveBest(g.score);
+    // 次の野菜に挑戦できるなら、そのボタンを出す（今回はじめて挑戦できるようになったら 🔓 を付ける）
+    const vi = VEGS.indexOf(veg);
+    const next = VEGS[vi + 1];
+    const nextBtn = document.getElementById('nextBtn');
+    nextBtn.hidden = !(next && vi + 1 < unlockedCount());
+    if (next) nextBtn.textContent = tr(vi + 1 >= openBefore ? 'res.unlocked' : 'res.next', { veg: vegName(next) });
     const rankName = tr('rank.' + RANKS.findIndex(r => g.score >= r.min));
-    document.getElementById('rRank').textContent = tr('res.rank', { r: rankName });
+    document.getElementById('rRank').textContent = tr('res.rank', { veg: vegName(veg), r: rankName });
     document.getElementById('rScore').textContent = fmt(g.score);
     document.getElementById('rCount').textContent = tr('unit.slices', { n: g.count });
     document.getElementById('rSpeed').textContent = tr('unit.cps', { n: (g.chops / (GAME_TIME + (g.continued ? CONTINUE_SEC : 0))).toFixed(1) });
@@ -512,7 +641,7 @@
     document.getElementById('bestResult').textContent = tr('best', { n: fmt(Math.max(best, g.score)) });
     setupShare(rankName);
     resultEl.classList.remove('hidden');
-    sfx.fanfare(isNew || g.score >= 7000);
+    sfx.fanfare(isNew || g.score >= UNLOCK_SCORE);
   }
 
   // ===== シェア =====
@@ -525,7 +654,8 @@
   function setupShare(rankName) {
     // X で弾かれないよう、ちゃぶ台返しと同じく1行・絵文字なしの文にする
     const detail = g.count ? tr('share.detail', { n: g.count, avg: (g.sumThick / g.count).toFixed(2) }) : '';
-    shareText = tr('share.text', { score: fmt(g.score), rank: rankName, detail });
+    const tag = veg.id === 'cucumber' ? '' : tr('veg.tag', { veg: vegName(veg) });
+    shareText = tr('share.text', { tag, score: fmt(g.score), rank: rankName, detail });
     const url = shareUrl();
     const enc = encodeURIComponent;
     document.getElementById('shareX').href =
@@ -579,7 +709,8 @@
     knifeT = Math.min(1, knifeT + dt * 9);
     shake = Math.max(0, shake - dt * 40);
 
-    if (paused || userPaused) return;
+    if (paused || userPaused) { pressing = null; return; }
+    updatePress();
     if (state === 'countdown') {
       g.countdown -= dt;
       const n = Math.ceil(g.countdown);
@@ -600,7 +731,7 @@
       if (c.enterT > 0) {
         c.enterT -= dt;
       } else {
-        c.pos = Math.min(c.len - STUB, c.pos + speedNow() * dt);
+        c.pos = Math.min(c.len - veg.stub, c.pos + speedNow() * dt);
       }
       if (g.time <= 0) { g.time = 0; endGame(); }
     } else if (state === 'finish') {
@@ -680,41 +811,58 @@
     ctx.closePath();
   }
 
-  // 輪切りの断面（上から見た図）
+  // 輪切りの断面（上から見た図）。野菜ごとに皮・身・種の描き方を変える
   function drawSliceFace(x, y, r, thick, rot) {
+    const v = veg;
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(rot);
     // 薄いほど透ける
     const alpha = Math.max(0.45, Math.min(1, 0.4 + thick * 0.18));
     ctx.globalAlpha = alpha;
-    // 影
+    const oval = (rx, ry = rx * 0.62, dy = 0) => { ctx.beginPath(); ctx.ellipse(0, dy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); };
+    // 影・側面の厚み・皮
     ctx.fillStyle = 'rgba(80, 50, 10, 0.18)';
     ctx.beginPath(); ctx.ellipse(2, 3 + thick * 0.6, r, r * 0.62, 0, 0, Math.PI * 2); ctx.fill();
-    // 側面の厚み
-    ctx.fillStyle = '#2f6a22';
-    ctx.beginPath(); ctx.ellipse(0, thick * 0.6, r, r * 0.62, 0, 0, Math.PI * 2); ctx.fill();
-    // 皮
-    ctx.fillStyle = '#3d7f2b';
-    ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.62, 0, 0, Math.PI * 2); ctx.fill();
-    // 果肉
-    ctx.fillStyle = '#d8efb0';
-    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.86, r * 0.86 * 0.62, 0, 0, Math.PI * 2); ctx.fill();
-    // 種の部分
-    ctx.fillStyle = '#c3e396';
-    ctx.beginPath(); ctx.ellipse(0, 0, r * 0.5, r * 0.5 * 0.62, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#f4fbe0';
-    for (let k = 0; k < 3; k++) {
-      const a = k * Math.PI * 2 / 3 + 0.5;
-      for (let j = 0; j < 2; j++) {
-        const rr = r * (0.22 + j * 0.14);
-        ctx.beginPath();
-        ctx.ellipse(Math.cos(a) * rr, Math.sin(a) * rr * 0.62, r * 0.07, r * 0.045, a, 0, Math.PI * 2);
-        ctx.fill();
+    ctx.fillStyle = v.side; oval(r, r * 0.62, thick * 0.6);
+    ctx.fillStyle = v.skin; oval(r);
+    const skinW = v.face === 'daikon' ? 0.95 : v.face === 'eggplant' ? 0.92 : 0.86;
+    ctx.fillStyle = v.flesh; oval(r * skinW);
+    ctx.fillStyle = v.core; oval(r * 0.5);
+    ctx.fillStyle = v.seed;
+    if (v.face === 'cucumber') {
+      for (let k = 0; k < 3; k++) {
+        const a = k * Math.PI * 2 / 3 + 0.5;
+        for (let j = 0; j < 2; j++) {
+          const rr = r * (0.22 + j * 0.14);
+          ctx.beginPath();
+          ctx.ellipse(Math.cos(a) * rr, Math.sin(a) * rr * 0.62, r * 0.07, r * 0.045, a, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    } else if (v.face === 'eggplant') {
+      // 身の中に小さな種が散らばる
+      for (let k = 0; k < 18; k++) {
+        const a = k * 2.399, rr = r * (0.18 + (k % 4) * 0.1);
+        ctx.beginPath(); ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr * 0.62, Math.max(0.8, r * 0.035), 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (v.face === 'burdock') {
+      // 年輪のような輪と、中心の筋
+      ctx.strokeStyle = v.seed; ctx.lineWidth = Math.max(0.8, r * 0.06);
+      ctx.beginPath(); ctx.ellipse(0, 0, r * 0.68, r * 0.68 * 0.62, 0, 0, Math.PI * 2); ctx.stroke();
+      oval(r * 0.18);
+    } else if (v.face === 'daikon') {
+      // 中心から広がる細い筋
+      ctx.strokeStyle = v.seed; ctx.lineWidth = 1;
+      for (let k = 0; k < 12; k++) {
+        const a = k * Math.PI / 6;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * r * 0.8, Math.sin(a) * r * 0.8 * 0.62); ctx.stroke();
       }
     }
     ctx.restore();
   }
+  // まな板に積む輪切りの大きさ（大根でも大きくなりすぎないようにする）
+  const pileR = () => Math.min(48, veg.diam * S / 2 * 0.55);
 
   function cucumberPath(x0, x1, top, bot, roundL, roundR) {
     const h = bot - top, r = h / 2;
@@ -730,31 +878,74 @@
   }
 
   function fillCucumberBody(x0, x1, top, bot, seed) {
+    const v = veg;
     const gr = ctx.createLinearGradient(0, top, 0, bot);
-    gr.addColorStop(0, '#5aa83f');
-    gr.addColorStop(0.25, '#7cc35a');
-    gr.addColorStop(0.55, '#3f8f2f');
-    gr.addColorStop(1, '#23561a');
+    gr.addColorStop(0, v.body[0]);
+    gr.addColorStop(0.25, v.body[1]);
+    gr.addColorStop(0.55, v.body[2]);
+    gr.addColorStop(1, v.body[3]);
     ctx.fillStyle = gr;
     ctx.fill();
-    // イボイボ
     ctx.save();
     ctx.clip();
-    ctx.fillStyle = 'rgba(230, 255, 200, 0.55)';
-    for (let i = 0; i < 80; i++) {
-      const px = x0 + ((Math.sin(seed + i * 12.9898) * 43758.5453) % 1 + 1) % 1 * (x1 - x0);
-      const py = top + ((Math.sin(seed + i * 78.233) * 12345.678) % 1 + 1) % 1 * (bot - top);
-      ctx.beginPath(); ctx.arc(px, py, 1.6, 0, Math.PI * 2); ctx.fill();
+    const rnd = (i, a, b) => ((Math.sin(seed + i * a) * b) % 1 + 1) % 1;
+    if (v.face === 'burdock') {
+      // 牛蒡は細い筋
+      ctx.strokeStyle = v.bumps; ctx.lineWidth = 1;
+      for (let i = 0; i < 40; i++) {
+        const px = x0 + rnd(i, 12.9898, 43758.5453) * (x1 - x0);
+        const py = top + rnd(i, 78.233, 12345.678) * (bot - top);
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + 14 + rnd(i, 3.1, 999.1) * 30, py); ctx.stroke();
+      }
+    } else if (v.bumps) {
+      // きゅうりのイボイボ、大根の細かい点
+      ctx.fillStyle = v.bumps;
+      for (let i = 0; i < 80; i++) {
+        const px = x0 + rnd(i, 12.9898, 43758.5453) * (x1 - x0);
+        const py = top + rnd(i, 78.233, 12345.678) * (bot - top);
+        ctx.beginPath(); ctx.arc(px, py, 1.6, 0, Math.PI * 2); ctx.fill();
+      }
     }
-    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    // つや（茄子は強め）
+    ctx.fillStyle = v.face === 'eggplant' ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.18)';
     ctx.fillRect(x0, top + (bot - top) * 0.15, x1 - x0, (bot - top) * 0.1);
+    ctx.restore();
+  }
+
+  // 右端（手で持つ側）の飾り：きゅうりのヘタ、茄子のガク、牛蒡の根の先、大根の葉
+  function drawVegEnd(x, cy, h) {
+    const v = veg;
+    ctx.save();
+    ctx.fillStyle = v.endColor;
+    if (v.end === 'calyx') {
+      ctx.beginPath();
+      ctx.moveTo(x - h * 0.35, cy - h * 0.5);
+      for (let i = 0; i <= 6; i++) {
+        const yy = cy - h * 0.5 + (h * i) / 6;
+        ctx.lineTo(x - h * (i % 2 ? 0.1 : 0.4), yy);
+      }
+      ctx.lineTo(x + 6, cy + h * 0.3); ctx.lineTo(x + 6, cy - h * 0.3);
+      ctx.closePath(); ctx.fill();
+      ctx.fillRect(x + 4, cy - 5, 18, 10);
+    } else if (v.end === 'leaves') {
+      ctx.fillStyle = '#c9e2a4';
+      ctx.fillRect(x - 8, cy - h * 0.45, 12, h * 0.9);
+      ctx.fillStyle = v.endColor;
+      for (let i = -2; i <= 2; i++) {
+        ctx.beginPath(); ctx.ellipse(x + 26, cy + i * h * 0.16, 30, 8, i * 0.25, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (v.end === 'root') {
+      ctx.beginPath(); ctx.ellipse(x + 2, cy, 5, h * 0.35, 0, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.ellipse(x + 4, cy, 6, 9, 0, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.restore();
   }
 
   function drawCucumber() {
     if (!g) return;
     const c = g.cuke;
-    const h = DIAM * S;
+    const h = veg.diam * S;
     const top = BOARD_Y - h, bot = BOARD_Y;
     const enterOff = c.enterT > 0 ? (c.enterT / 0.45) * 500 : 0;
     const pending = c.pos - c.lastCut;
@@ -766,14 +957,13 @@
     fillCucumberBody(xCutFace, xRight, top, bot, c.seed);
     // 切り口
     if (!startRound) {
-      ctx.fillStyle = '#cfe9a3';
+      ctx.fillStyle = veg.cut;
       ctx.beginPath();
       ctx.ellipse(xCutFace, (top + bot) / 2, 4, h / 2 - 1, 0, 0, Math.PI * 2);
       ctx.fill();
     }
-    // ヘタ
-    ctx.fillStyle = '#6b5a2a';
-    ctx.beginPath(); ctx.ellipse(xRight + 4, (top + bot) / 2, 6, 9, 0, 0, Math.PI * 2); ctx.fill();
+    // ヘタなど
+    drawVegEnd(xRight, (top + bot) / 2, h);
     // 包丁位置の目安線（切る前の部分）
     drawHand(xRight - 26, top, h);
   }
@@ -801,11 +991,13 @@
 
   function drawKnife() {
     // 振り下ろしアニメ: knifeT 0 → 下, 1 → 上
-    const h = DIAM * S;
+    const h = veg.diam * S;
     const e = knifeT < 0.25 ? 0 : (knifeT - 0.25) / 0.75;
     const lift = 20 + (1 - Math.pow(1 - e, 2)) * 60;
     const blendDown = knifeT < 0.25;
-    const bladeBottom = blendDown ? BOARD_Y : BOARD_Y - h - lift;
+    const prog = pressProgress();
+    // 長押し中は刃が少しずつ沈む
+    const bladeBottom = prog > 0 ? BOARD_Y - h * (1 - prog) * 0.95 - 2 : blendDown ? BOARD_Y : BOARD_Y - h - lift;
     const bladeTop = bladeBottom - 200;
     ctx.save();
     // 刃（少し斜めから見た包丁）
@@ -844,8 +1036,18 @@
     ctx.fillStyle = '#4a7bb5';
     ctx.fillRect(KNIFE_X - 2, bladeTop - 300, 52, 130);
     ctx.restore();
+    // 長押しのゲージ
+    if (prog > 0) {
+      ctx.save();
+      ctx.lineWidth = 8;
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.beginPath(); ctx.arc(KNIFE_X + 70, BOARD_Y - h - 40, 18, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = '#e8a33d';
+      ctx.beginPath(); ctx.arc(KNIFE_X + 70, BOARD_Y - h - 40, 18, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
     // 振り下ろし時のエフェクト
-    if (blendDown) {
+    if (blendDown && prog === 0) {
       ctx.strokeStyle = `rgba(255,255,255,${0.8 - knifeT * 3})`;
       ctx.lineWidth = 3;
       for (let i = 0; i < 3; i++) {
@@ -858,7 +1060,7 @@
   }
 
   function drawFlying() {
-    const h = DIAM * S;
+    const h = veg.diam * S;
     for (const f of flying) {
       const p = Math.min(1, f.age / 0.35);
       const ease = 1 - Math.pow(1 - p, 3);
@@ -868,25 +1070,25 @@
         ctx.save();
         ctx.translate(f.x - f.thick * S / 2, BOARD_Y);
         ctx.rotate(a);
-        ctx.fillStyle = '#3f8f2f';
+        ctx.fillStyle = veg.skin;
         ctx.fillRect(-Math.max(1.5, f.thick * S), -h, Math.max(1.5, f.thick * S), h);
-        ctx.fillStyle = '#d8efb0';
+        ctx.fillStyle = veg.flesh;
         ctx.fillRect(-Math.max(1.5, f.thick * S) + 0.5, -h + 3, Math.max(1, f.thick * S - 1), h - 6);
         ctx.restore();
       } else {
         const x = f.x + (f.tx - f.x) * ease;
         const y = (BOARD_Y - h / 2) + (f.ty - (BOARD_Y - h / 2)) * ease - Math.sin(p * Math.PI) * 40;
-        drawSliceFace(x, y, (h / 2) * (0.7 + 0.3 * ease) * 0.55, f.thick, f.rot * ease);
+        drawSliceFace(x, y, pileR() * (0.7 + 0.3 * ease), f.thick, f.rot * ease);
       }
     }
   }
 
   function drawSlices() {
-    for (const s of slices) drawSliceFace(s.tx, s.ty, DIAM * S / 2 * 0.55, s.thick, s.rot);
+    for (const s of slices) drawSliceFace(s.tx, s.ty, pileR(), s.thick, s.rot);
   }
 
   function drawStubs() {
-    const h = DIAM * S;
+    const h = veg.diam * S;
     for (const s of stubs) {
       const p = s.age / 0.8;
       const x = KNIFE_X + 20 + p * 600;
@@ -902,7 +1104,7 @@
   }
 
   function drawParticles() {
-    ctx.fillStyle = 'rgba(200, 240, 170, 0.9)';
+    ctx.fillStyle = veg.juice;
     for (const p of particles) {
       ctx.globalAlpha = 1 - p.age / p.life;
       ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
@@ -989,7 +1191,7 @@
     ctx.fillText(String(n), W / 2, H / 2 - 20);
     ctx.font = 'bold 26px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
     ctx.lineWidth = 6;
-    const hint = tr(NATIVE ? 'hint.tc' : 'hint.kb');
+    const hint = tr(veg.press ? 'hint.press' : NATIVE ? 'hint.tc' : 'hint.kb');
     ctx.strokeText(hint, W / 2, H / 2 + 90);
     ctx.fillStyle = '#23561a';
     ctx.fillText(hint, W / 2, H / 2 + 90);
