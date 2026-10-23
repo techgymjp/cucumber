@@ -2,7 +2,8 @@
   'use strict';
 
   // ===== 設定 =====
-  const W = 960, H = 540;
+  // 描画の座標系。高さ 540 を基準に、画面が横長なら W を、縦長なら H を広げて画面いっぱいに描く
+  let W = 960, H = 540;
   const GAME_TIME = 30;            // 秒
   const S = 3.6;                   // 1mm あたりのピクセル
   const BOARD_Y = 400;             // まな板の上面
@@ -73,6 +74,10 @@
   const ctx = canvas.getContext('2d');
   function resize() {
     const r = canvas.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const aspect = r.width / r.height;
+    W = Math.round(Math.max(960, 540 * aspect));
+    H = Math.round(Math.max(540, 960 / aspect));
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.round(r.width * dpr);
     canvas.height = Math.round(r.height * dpr);
@@ -1321,16 +1326,23 @@
       bannerWant = want;
       bannerSince = now;
       if (!want && bannerOn) { bannerOn = false; Ads.hideBanner(); }
+      reserveBanner();
     }
     if (bannerWant && !bannerOn && now - bannerSince >= (state === 'result' ? BANNER_DELAY_RESULT_MS : 0)) {
       bannerOn = true;
       Ads.showBanner();
     }
   }
-  // バナーの高さぶん、ゲーム画面を上に詰める（一度決まったら、出していないときも同じ場所を空けておき、画面が動かないようにする）
-  Ads.onBannerSize(h => {
-    document.documentElement.style.setProperty('--banner-h', `${Math.ceil(h)}px`);
+  // バナーを出す画面では、バナーの高さぶんゲーム画面を上に詰める。プレイ中は画面いっぱいに使う
+  let bannerH = 0;
+  function reserveBanner() {
+    const h = bannerWant ? bannerH : 0;
+    document.documentElement.style.setProperty('--banner-h', `${h}px`);
     resize();
+  }
+  Ads.onBannerSize(h => {
+    bannerH = Math.ceil(h);
+    reserveBanner();
   });
 
   function loop(t) {
