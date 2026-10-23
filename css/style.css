@@ -143,7 +143,7 @@ button.next { background: var(--accent); box-shadow: 0 5px 0 #a8701f; }
 .sbtn.copy { background: #6b7a5e; }
 
 /* スマホ横画面など、高さが低いとき */
-@media (max-height: 500px) {
+@media (max-height: 600px) {
   .legal { margin-top: 4px; }
   .langSel { margin-top: 4px; }
   .vegSel { gap: 6px; margin-bottom: 6px; }

@@ -34,13 +34,13 @@
       cut: '#f6a04a', end: 'leaves', endColor: '#4f8f2f', juice: 'rgba(250, 170, 90, 0.9)',
     },
     {
-      id: 'burdock', diam: 18, len: [50, 65], speed: [1, 3], stub: 14, press: 1000, mul: 9,
+      id: 'burdock', diam: 18, len: [90, 110], speed: [2, 5], stub: 14, press: 500, mul: 5,
       body: ['#9a7a55', '#b08e66', '#76583a', '#4f3a24'], bumps: 'rgba(70, 45, 20, 0.35)',
       side: '#5a4026', skin: '#6e5236', flesh: '#efe2c4', core: '#dcc79c', seed: '#c9b07e', face: 'burdock',
       cut: '#e8d8b4', end: 'root', endColor: '#5a4026', juice: 'rgba(235, 220, 190, 0.9)',
     },
     {
-      id: 'daikon', diam: 60, len: [38, 48], speed: [0.5, 1.5], stub: 20, press: 2000, mul: 15,
+      id: 'daikon', diam: 60, len: [60, 75], speed: [1, 2.8], stub: 20, press: 1000, mul: 8,
       body: ['#ffffff', '#fbfbf6', '#e8eadf', '#c9cdbb'], bumps: 'rgba(150, 150, 130, 0.22)',
       side: '#d3d7c6', skin: '#eef0e6', flesh: '#fcfcf6', core: '#f1f4e6', seed: '#e3e7d6', face: 'daikon',
       cut: '#f6f8ee', end: 'leaves', endColor: '#5a9a3a', juice: 'rgba(245, 248, 238, 0.95)',
