@@ -25,6 +25,12 @@
       cut: '#efe6c6', end: 'calyx', endColor: '#2f4a25', juice: 'rgba(240, 232, 200, 0.9)',
     },
     {
+      id: 'carrot', diam: 30, len: [150, 190], speed: [6, 18], stub: 14, press: 80,
+      body: ['#f9a54c', '#fdb968', '#e8791c', '#b6540b'], bumps: 'rgba(150, 70, 10, 0.35)',
+      side: '#b6540b', skin: '#d96a12', flesh: '#f28a25', core: '#f8ae55', seed: '#fbc77f', face: 'carrot',
+      cut: '#f6a04a', end: 'leaves', endColor: '#4f8f2f', juice: 'rgba(250, 170, 90, 0.9)',
+    },
+    {
       id: 'burdock', diam: 18, len: [230, 290], speed: [5, 15], stub: 14, press: 120,
       body: ['#9a7a55', '#b08e66', '#76583a', '#4f3a24'], bumps: 'rgba(70, 45, 20, 0.35)',
       side: '#5a4026', skin: '#6e5236', flesh: '#efe2c4', core: '#dcc79c', seed: '#c9b07e', face: 'burdock',
@@ -537,7 +543,7 @@
   function renderTexts() {
     I18N.apply();
     let rules = tr('title.rules', { veg: tr('veg.lc.' + veg.id), ctl: tr(NATIVE ? 'ctl.tc' : 'ctl.kb') });
-    if (veg.press) rules += tr('rule.press', { veg: vegName(veg), why: tr('why.' + veg.id) });
+    if (veg.press) rules += tr('rule.press', { veg: tr('veg.lc.' + veg.id), why: tr('why.' + veg.id) });
     document.getElementById('rulesText').innerHTML = rules;
     renderVegSel();
     showBest();
@@ -846,6 +852,13 @@
         const a = k * 2.399, rr = r * (0.18 + (k % 4) * 0.1);
         ctx.beginPath(); ctx.arc(Math.cos(a) * rr, Math.sin(a) * rr * 0.62, Math.max(0.8, r * 0.035), 0, Math.PI * 2); ctx.fill();
       }
+    } else if (v.face === 'carrot') {
+      // 芯から広がる細い筋
+      ctx.strokeStyle = v.seed; ctx.lineWidth = 1;
+      for (let k = 0; k < 10; k++) {
+        const a = k * Math.PI / 5;
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * r * 0.5, Math.sin(a) * r * 0.5 * 0.62); ctx.stroke();
+      }
     } else if (v.face === 'burdock') {
       // 年輪のような輪と、中心の筋
       ctx.strokeStyle = v.seed; ctx.lineWidth = Math.max(0.8, r * 0.06);
@@ -889,7 +902,15 @@
     ctx.save();
     ctx.clip();
     const rnd = (i, a, b) => ((Math.sin(seed + i * a) * b) % 1 + 1) % 1;
-    if (v.face === 'burdock') {
+    if (v.face === 'carrot') {
+      // 人参は横じわ（短い縦の筋）
+      ctx.strokeStyle = v.bumps; ctx.lineWidth = 1.2;
+      for (let i = 0; i < 45; i++) {
+        const px = x0 + rnd(i, 12.9898, 43758.5453) * (x1 - x0);
+        const py = top + rnd(i, 78.233, 12345.678) * (bot - top) * 0.8;
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + 1, py + 6 + rnd(i, 3.1, 999.1) * 14); ctx.stroke();
+      }
+    } else if (v.face === 'burdock') {
       // 牛蒡は細い筋
       ctx.strokeStyle = v.bumps; ctx.lineWidth = 1;
       for (let i = 0; i < 40; i++) {
