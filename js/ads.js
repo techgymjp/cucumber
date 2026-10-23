@@ -5,11 +5,13 @@ const Ads = (() => {
     test: {
       interstitial: 'ca-app-pub-3940256099942544/1033173712',
       rewarded: 'ca-app-pub-3940256099942544/5224354917',
+      banner: 'ca-app-pub-3940256099942544/9214589741',
     },
-    // きゅうり輪切り名人の本番広告ユニット（AdMob で作成したら ID を入れる。空のあいだは本番ビルドで広告を出さない）
+    // きゅうり輪切り名人の本番広告ユニット（空の種類は本番ビルドでは出さない）
     production: {
-      interstitial: '',
-      rewarded: '',
+      interstitial: 'ca-app-pub-6411535997477460/2601084855',
+      rewarded: 'ca-app-pub-6411535997477460/6996333275',
+      banner: 'ca-app-pub-6411535997477460/7335244622',
     },
   };
   const RETRY_MS = 20000;      // 読み込みに失敗したら少し待って再挑戦する
@@ -17,7 +19,7 @@ const Ads = (() => {
   const native = !!(cap && cap.isNativePlatform && cap.isNativePlatform());
   const testing = window.AD_MODE !== 'production';
   const ids = testing ? UNITS.test : UNITS.production;
-  const AdMob = native && cap.Plugins && ids.interstitial && ids.rewarded ? cap.Plugins.AdMob : null;
+  const AdMob = native && cap.Plugins ? cap.Plugins.AdMob : null;
 
   let ready = false;           // 広告をリクエストしてよい状態（初期化と同意確認が済んだ）
   let showing = false;
@@ -81,13 +83,46 @@ const Ads = (() => {
     AdMob.addListener('onRewardedVideoAdReward', () => { rewarded = true; });
     AdMob.addListener('onRewardedVideoAdDismissed', () => finish('reward', rewarded));
     AdMob.addListener('onRewardedVideoAdFailedToShow', () => finish('reward', false));
-    prepare('inter');
-    prepare('reward');
+    AdMob.addListener('bannerAdSizeChanged', info => { if (info && info.height > 0) bannerSizeListeners.forEach(f => f(info.height)); });
+    AdMob.addListener('bannerAdFailedToLoad', () => {
+      // 読み込めなかったら作り直す
+      bannerCreated = false;
+      setTimeout(() => { if (bannerWanted) showBanner(); }, RETRY_MS);
+    });
+    if (ids.interstitial) prepare('inter');
+    if (ids.rewarded) prepare('reward');
+  }
+
+  // バナー（画面の下）。タイトル・結果・ポーズ画面でだけ出す
+  let bannerWanted = false;
+  let bannerCreated = false;
+  const bannerSizeListeners = [];
+  async function showBanner() {
+    bannerWanted = true;
+    if (!AdMob || !ids.banner) return;
+    await initDone;
+    if (!ready || !bannerWanted) return;
+    try {
+      if (bannerCreated) await AdMob.resumeBanner();
+      else {
+        bannerCreated = true;
+        await AdMob.showBanner({ adId: ids.banner, adSize: 'ADAPTIVE_BANNER', position: 'BOTTOM_CENTER', margin: 0, isTesting: testing });
+      }
+      // 表示の準備中に「隠す」が来ていたら隠す
+      if (!bannerWanted) await AdMob.hideBanner();
+    } catch (e) {
+      bannerCreated = false;
+    }
+  }
+  function hideBanner() {
+    bannerWanted = false;
+    if (!AdMob || !bannerCreated) return;
+    AdMob.hideBanner().catch(() => {});
   }
 
   // 全画面広告を表示し、閉じられたら resolve する（読み込めていないときは出さずにすぐ resolve）
   function showInterstitial() {
-    if (!AdMob || !ready || !slots.inter.loaded || showing) return Promise.resolve();
+    if (!AdMob || !ids.interstitial || !ready || !slots.inter.loaded || showing) return Promise.resolve();
     showing = true; slots.inter.loaded = false;
     if (window.Sfx) Sfx.suspend();
     return new Promise(resolve => {
@@ -98,7 +133,7 @@ const Ads = (() => {
 
   // リワード広告を表示する。結果は 'rewarded'（最後まで見た）/ 'skipped'（途中で閉じた）/ 'unavailable'（読み込めなかった）
   async function showRewarded() {
-    if (!AdMob || showing) return 'unavailable';
+    if (!AdMob || !ids.rewarded || showing) return 'unavailable';
     await initDone;
     if (!ready || !(await ensureLoaded('reward', 8000))) return 'unavailable';
     showing = true; slots.reward.loaded = false;
@@ -118,12 +153,18 @@ const Ads = (() => {
   const initDone = AdMob ? init() : Promise.resolve();
 
   return {
-    get available() { return !!AdMob; },
+    // リワード広告（延長）が使えるか
+    get available() { return !!AdMob && !!ids.rewarded; },
+    get bannerAvailable() { return !!AdMob && !!ids.banner; },
     get showing() { return showing; },
     get privacyOptionsRequired() { return privacyRequired; },
     initDone,
     showInterstitial,
     showRewarded,
     showPrivacyOptions,
+    showBanner,
+    hideBanner,
+    // バナーの高さ（CSS ピクセル）が決まったら呼ぶ
+    onBannerSize(f) { bannerSizeListeners.push(f); },
   };
 })();

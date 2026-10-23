@@ -380,7 +380,7 @@
   window.addEventListener('keydown', e => {
     if (e.repeat) return;
     if (e.code === 'Space' || e.code === 'Enter' || /^Key[A-Z]$/.test(e.code)) {
-      if (userPaused) { e.preventDefault(); setUserPaused(false); }
+      if (userPaused) { e.preventDefault(); resumeFromPause(); }
       else if (state === 'play') { e.preventDefault(); onPress(e); }
       else if ((state === 'title' || state === 'result') && (e.code === 'Space' || e.code === 'Enter')) {
         e.preventDefault(); startGame();
@@ -409,17 +409,16 @@
   }
   function startFromButton() { goLandscape(); startGame(); }
   document.getElementById('startBtn').addEventListener('click', startFromButton);
-  // 2 回に 1 回、「もう一回！」の前に全画面広告を出す（Android アプリのみ）
-  let retryCount = 0, retryBusy = false;
-  document.getElementById('retryBtn').addEventListener('click', async () => {
-    if (retryBusy) return;
-    retryBusy = true;
+  // 「もう一回！」「タイトルへ」「ポーズからの再開」の前に、毎回全画面広告を出す（Android アプリのみ。読み込めていなければ出さずに進む）
+  let adBusy = false;
+  async function afterInterstitial(next) {
+    if (adBusy) return;
+    adBusy = true;
     initAudio();
-    retryCount++;
-    if (retryCount % 2 === 0) await Ads.showInterstitial();
-    retryBusy = false;
-    startFromButton();
-  });
+    try { await Ads.showInterstitial(); } finally { adBusy = false; }
+    next();
+  }
+  document.getElementById('retryBtn').addEventListener('click', () => afterInterstitial(startFromButton));
 
   // 縦向きのスマホでは案内を出し、プレイ中なら一時停止
   const rotateEl = document.getElementById('rotate');
@@ -469,7 +468,11 @@
       resumeCountdown();
     }
   }
-  pauseEl.addEventListener('pointerdown', e => { e.preventDefault(); setUserPaused(false); });
+  function resumeFromPause() {
+    if (!userPaused) return;
+    afterInterstitial(() => setUserPaused(false));
+  }
+  pauseEl.addEventListener('pointerdown', e => { e.preventDefault(); resumeFromPause(); });
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { setUserPaused(true); Sfx.suspend(); }
     else if (!Ads.showing) Sfx.resume();
@@ -479,7 +482,8 @@
     plugin('App').addListener('backButton', () => {
       if (state === 'title' || state === 'result') plugin('App').exitApp();
       else if (state === 'continue') giveUp();
-      else if (state === 'play' || state === 'countdown') setUserPaused(!userPaused);
+      else if (userPaused) resumeFromPause();
+      else if (state === 'play' || state === 'countdown') setUserPaused(true);
     });
   }
 
@@ -556,25 +560,62 @@
     VEGS.forEach((v, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'vegBtn' + (v === veg ? ' on' : '') + (i >= open ? ' locked' : '');
-      b.disabled = i >= open;
+      // まだ挑戦できない野菜は、アプリでは広告を見て今回だけ挑戦できる（Web 版では押せない）
+      const locked = i >= open && v !== veg;
+      b.className = 'vegBtn' + (v === veg ? ' on' : '') + (locked ? ' locked' : '') + (locked && Ads.available ? ' adTry' : '');
+      b.disabled = locked && !Ads.available;
       const sw = document.createElement('span');
       sw.className = 'vegSwatch';
       sw.style.background = `radial-gradient(circle, ${v.core} 0 30%, ${v.flesh} 31% 72%, ${v.skin} 73%)`;
       const name = document.createElement('span');
       name.className = 'vegName';
-      name.textContent = (i >= open ? '🔒 ' : '') + vegName(v);
+      name.textContent = (locked ? '🔒 ' : '') + vegName(v);
       const sub = document.createElement('span');
       sub.className = 'vegSub';
       const best = loadBest(v);
-      sub.textContent = i >= open
-        ? tr('veg.lock', { prev: vegName(VEGS[i - 1]), n: fmt(UNLOCK_SCORE) })
+      sub.textContent = locked
+        ? (Ads.available ? tr('veg.adTry') : tr('veg.lock', { prev: vegName(VEGS[i - 1]), n: fmt(UNLOCK_SCORE) }))
         : best ? tr('veg.best', { n: fmt(best) }) : '';
       b.append(sw, name, sub);
-      b.addEventListener('click', () => { initAudio(); sfx.click(); selectVeg(v); });
+      b.addEventListener('click', () => {
+        initAudio(); sfx.click();
+        if (locked) showUnlock(v); else selectVeg(v);
+      });
       vegSelEl.appendChild(b);
     });
   }
+  // ===== 広告を見て、まだ挑戦できない野菜に今回だけ挑戦する（リワード広告） =====
+  const unlockEl = document.getElementById('unlockOv');
+  const unlockMsg = document.getElementById('unlockMsg');
+  let unlockVeg = null, unlockBusy = false;
+  function showUnlock(v) {
+    const i = VEGS.indexOf(v);
+    unlockVeg = v;
+    document.getElementById('unlockHead').textContent = tr('unlock.head', { veg: vegName(v) });
+    document.getElementById('unlockLead').innerHTML = tr('unlock.lead', { veg: vegName(v), prev: vegName(VEGS[i - 1]), n: fmt(UNLOCK_SCORE) });
+    unlockMsg.hidden = true;
+    unlockEl.classList.remove('hidden');
+  }
+  function hideUnlock() { unlockEl.classList.add('hidden'); unlockVeg = null; }
+  document.getElementById('unlockNoBtn').addEventListener('click', () => { if (!unlockBusy) { sfx.click(); hideUnlock(); } });
+  document.getElementById('unlockAdBtn').addEventListener('click', async () => {
+    if (!unlockVeg || unlockBusy) return;
+    unlockBusy = true;
+    sfx.click();
+    const result = await Ads.showRewarded();
+    unlockBusy = false;
+    if (!unlockVeg) return;
+    if (result === 'rewarded') {
+      const v = unlockVeg;
+      hideUnlock();
+      selectVeg(v);
+      startFromButton();
+    } else {
+      unlockMsg.textContent = tr(result === 'skipped' ? 'unlock.skipped' : 'cont.fail');
+      unlockMsg.hidden = false;
+    }
+  });
+
   function selectVeg(v) {
     veg = v;
     try { localStorage.setItem('cuke-veg', v.id); } catch (e) {}
@@ -591,15 +632,18 @@
     const next = VEGS[VEGS.indexOf(veg) + 1];
     if (!next) return;
     selectVeg(next);
-    document.getElementById('retryBtn').click(); // 「もう一回！」と同じ流れ（広告の回数も共通）
+    document.getElementById('retryBtn').click(); // 「もう一回！」と同じ流れ（全画面広告も同じ）
   });
-  document.getElementById('titleBtn').addEventListener('click', () => {
-    initAudio(); sfx.click();
+  document.getElementById('titleBtn').addEventListener('click', () => afterInterstitial(() => {
+    sfx.click();
     resultEl.classList.add('hidden');
     titleEl.classList.remove('hidden');
     state = 'title';
+    // 広告で今回だけ挑戦した野菜からタイトルに戻ったら、挑戦できる野菜に戻す
+    const open = unlockedCount();
+    if (VEGS.indexOf(veg) >= open) selectVeg(VEGS[open - 1]);
     renderTexts();
-  });
+  }));
 
   function showBest() {
     const b = loadBest();
@@ -1268,9 +1312,31 @@
   }
 
   let last = performance.now();
+  // バナーはタイトル・結果・ポーズ画面だけ。プレイ中の連打で誤って押さないよう、結果画面では少し遅らせて出す
+  const BANNER_DELAY_RESULT_MS = 1000;
+  let bannerWant = false, bannerOn = false, bannerSince = 0;
+  function updateBanner(now) {
+    const want = state === 'title' || state === 'result' || userPaused;
+    if (want !== bannerWant) {
+      bannerWant = want;
+      bannerSince = now;
+      if (!want && bannerOn) { bannerOn = false; Ads.hideBanner(); }
+    }
+    if (bannerWant && !bannerOn && now - bannerSince >= (state === 'result' ? BANNER_DELAY_RESULT_MS : 0)) {
+      bannerOn = true;
+      Ads.showBanner();
+    }
+  }
+  // バナーの高さぶん、ゲーム画面を上に詰める（一度決まったら、出していないときも同じ場所を空けておき、画面が動かないようにする）
+  Ads.onBannerSize(h => {
+    document.documentElement.style.setProperty('--banner-h', `${Math.ceil(h)}px`);
+    resize();
+  });
+
   function loop(t) {
     const dt = Math.min(0.05, (t - last) / 1000);
     last = t;
+    updateBanner(t);
     update(dt);
     render();
     requestAnimationFrame(loop);

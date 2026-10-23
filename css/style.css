@@ -19,16 +19,17 @@ html, body {
   overscroll-behavior: none;
   -webkit-touch-callout: none;
 }
+/* --banner-h: アプリの画面下に出すバナーの高さ。ゲーム画面はその上に収める */
 #wrap {
   position: relative;
-  width: 100vw; height: 100vh; height: 100dvh;
+  width: 100vw; height: calc(100vh - var(--banner-h, 0px)); height: calc(100dvh - var(--banner-h, 0px));
   display: flex; align-items: center; justify-content: center;
 }
 #stage {
   position: relative;
-  width: min(100vw, calc(100dvh * 16 / 9));
+  width: min(100vw, calc((100dvh - var(--banner-h, 0px)) * 16 / 9));
   aspect-ratio: 16 / 9;
-  max-height: 100dvh;
+  max-height: calc(100dvh - var(--banner-h, 0px));
 }
 canvas { display: block; width: 100%; height: 100%; border-radius: 12px; }
 .overlay {
@@ -88,6 +89,9 @@ button.secondary { background: #8a8a7a; box-shadow: 0 5px 0 #55554a; font-size: 
 .vegBtn.locked { opacity: 0.55; cursor: not-allowed; }
 .vegBtn:active { transform: translateY(2px); }
 .vegBtn.locked:active { transform: none; }
+.vegBtn.locked.adTry { opacity: 0.85; cursor: pointer; }
+.vegBtn.locked.adTry:active { transform: translateY(2px); }
+.vegBtn.adTry .vegSub { color: #b06a10; font-weight: bold; opacity: 1; }
 .vegSwatch { grid-row: 1 / 3; width: 26px; height: 26px; border-radius: 50%; }
 .vegName { font-weight: bold; line-height: 1.2; }
 .vegSub { font-size: 11px; font-weight: normal; opacity: 0.75; line-height: 1.2; }
@@ -201,3 +205,5 @@ button.next { background: var(--accent); box-shadow: 0 5px 0 #a8701f; }
   #rotate .phone { animation: none; transform: rotate(-90deg); }
   h1 .slice { animation: none; }
 }
+/* タイトル画面の上に重ねる確認画面は、後ろを少し暗くする */
+#unlockOv { background: rgba(30, 40, 20, 0.45); border-radius: 12px; z-index: 6; }
