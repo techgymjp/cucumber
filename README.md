@@ -18,6 +18,7 @@ JET STRIKE（techgymjp/jet-fighter）の `docs/ANDROID_PORTING.md` と同じ構�
 
 - パッケージ名：`jp.techgym.cucumber`（Capacitor 8、横画面固定）
 - ビルドは GitHub Actions（`.github/workflows/android.yml`）で行います。既定ブランチに push すると、動作確認用の APK（テスト広告）が Release `android-latest` に載ります。
+- 動作確認用 APK：`https://github.com/techgymjp/cucumber/releases/latest/download/cucumber.apk`（QR コード：`docs/apk-qr.png`）
 - GitHub Secrets にアップロード鍵を登録すると、Google Play 用の署名付き AAB（本番広告）が Actions の Artifact に出ます。
 - 本番広告の ID は `android/app/src/main/res/values/strings.xml`（アプリ ID）と `js/ads.js`（広告ユニット ID）に入れます。
 
