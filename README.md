@@ -10,6 +10,9 @@
 - 終了後に枚数・包丁さばき（回/秒）・平均の厚さ・最薄・称号を表示。自己ベストは端末に保存されます。
 - Android アプリでは、時間切れのときに広告を見ると 1 回だけ 10 秒延長できます。
 
+## 日本語 / 英語
+端末の言語が日本語なら日本語、それ以外は英語で表示します（`js/i18n.js`）。タイトル画面のボタンで切り替えられ、選んだ言語は端末に保存されます。英語名は **Cucumber Slice Master** です。Android のアプリ名も端末の言語に合わせて切り替わります（`android/app/src/main/res/values/strings.xml` と `values-ja/strings.xml`）。
+
 ## 効果音
 Web Audio API でその場で合成しています（シャキッ＋トン、空振り、神業のキラーン、コンボ、カウントダウン、終了ファンファーレなど）。右上のボタンで ON/OFF できます。
 
@@ -34,6 +37,7 @@ npx cap sync android   # Android プロジェクトへコピー
 index.html             画面構成（タイトル・結果・一時停止・延長）
 css/style.css          スタイル
 js/main.js             ゲーム本体（描画・効果音・得点・シェア・アプリ用の処理）
+js/i18n.js             日本語 / 英語の文言
 js/ads.js              AdMob 広告（Android アプリのときだけ動く）
 js/ads-config.js       広告モード（ビルド時に生成）
 js/build-info.js       バージョン表示（ビルド時に生成）

@@ -12,20 +12,24 @@
   const SPEED_START = 6;           // mm/秒
   const SPEED_END = 20;            // mm/秒
   const GRADES = [
-    { max: 1.0, name: '神業！', pts: 100, color: '#e0402a', combo: true },
-    { max: 2.0, name: '極うす！', pts: 60, color: '#e8a33d', combo: true },
-    { max: 3.5, name: 'うすい', pts: 30, color: '#3f8f2f', combo: true },
-    { max: 6.0, name: 'ふつう', pts: 10, color: '#6b7a5e', combo: false },
-    { max: Infinity, name: 'ぶあつい…', pts: 2, color: '#8a6d4f', combo: false },
+    { max: 1.0, pts: 100, color: '#e0402a', combo: true },
+    { max: 2.0, pts: 60, color: '#e8a33d', combo: true },
+    { max: 3.5, pts: 30, color: '#3f8f2f', combo: true },
+    { max: 6.0, pts: 10, color: '#6b7a5e', combo: false },
+    { max: Infinity, pts: 2, color: '#8a6d4f', combo: false },
   ];
   const RANKS = [
-    { min: 16000, name: '伝説のきゅうり仙人' },
-    { min: 11000, name: '料亭の花板' },
-    { min: 7000, name: '一人前の板前' },
-    { min: 3500, name: '修行中の若衆' },
-    { min: 1000, name: '見習い' },
-    { min: 0, name: 'きゅうりに負けた人' },
+    { min: 16000 }, // 伝説のきゅうり仙人
+    { min: 11000 }, // 料亭の花板
+    { min: 7000 }, // 一人前の板前
+    { min: 3500 }, // 修行中の若衆
+    { min: 1000 }, // 見習い
+    { min: 0 }, // きゅうりに負けた人
   ];
+
+  // 表示言語に合わせた文言（js/i18n.js）
+  const tr = (key, vars) => I18N.t(key, vars);
+  const fmt = n => n.toLocaleString(I18N.lang === 'ja' ? 'ja-JP' : 'en-US');
 
   // Android アプリ（Capacitor）で動いているか
   const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -214,7 +218,7 @@
       sfx.whiff();
       if (g.combo >= 3) sfx.comboBreak();
       g.combo = 0;
-      addPopup('空振り', '#888', KNIFE_X, BOARD_Y - DIAM * S - 30, 22, true);
+      addPopup(tr('pop.miss'), '#888', KNIFE_X, BOARD_Y - DIAM * S - 30, 22, true);
       shake = 4;
       return;
     }
@@ -259,7 +263,7 @@
         life: 0.4 + Math.random() * 0.3, age: 0,
       });
     }
-    addPopup(`${gr.name} ${t.toFixed(1)}mm`, gr.color, KNIFE_X - 60, BOARD_Y - DIAM * S - 40, gi <= 1 ? 30 : 24, true);
+    addPopup(`${tr('grade.' + gi)} ${t.toFixed(1)}mm`, gr.color, KNIFE_X - 60, BOARD_Y - DIAM * S - 40, gi <= 1 ? 30 : 24, true);
     if (mult > 1) {
       popups = popups.filter(p => !p.multMsg);
       addPopup(`+${pts} ×${mult}`, '#d1452f', KNIFE_X - 60, BOARD_Y - DIAM * S - 4, 18);
@@ -437,7 +441,7 @@
       state = 'play';
       resumeCountdown();
     } else {
-      contMsg.textContent = result === 'skipped' ? '最後まで見ると延長できます' : '広告を読み込めませんでした';
+      contMsg.textContent = tr(result === 'skipped' ? 'cont.skipped' : 'cont.fail');
       contMsg.hidden = false;
       g.contT = Math.max(g.contT, 5);
     }
@@ -449,7 +453,17 @@
   Ads.initDone.then(() => { if (Ads.privacyOptionsRequired) document.getElementById('adPrivacy').hidden = false; });
   document.getElementById('adPrivacyLink').addEventListener('click', e => { e.preventDefault(); Ads.showPrivacyOptions(); });
   // アプリではキー操作の案内を出さない
-  if (NATIVE) document.getElementById('ctlText').textContent = '画面をタップ';
+  // 言語に合わせてタイトル画面の文言を出す（アプリではキー操作の案内を出さない）
+  function renderTexts() {
+    I18N.apply();
+    document.getElementById('rulesText').innerHTML = tr('title.rules', { ctl: tr(NATIVE ? 'ctl.tc' : 'ctl.kb') });
+    showBest();
+  }
+  document.querySelectorAll('[data-lang]').forEach(b => b.addEventListener('click', () => {
+    initAudio(); sfx.click();
+    I18N.setLang(b.dataset.lang);
+  }));
+  I18N.onChange(renderTexts);
 
   document.getElementById('titleBtn').addEventListener('click', () => {
     initAudio(); sfx.click();
@@ -461,7 +475,7 @@
 
   function showBest() {
     const b = loadBest();
-    const txt = b ? `自己ベスト: ${b.toLocaleString()} 点` : '';
+    const txt = b ? tr('best', { n: fmt(b) }) : '';
     document.getElementById('bestTitle').textContent = txt;
   }
 
@@ -485,18 +499,18 @@
     const best = loadBest();
     const isNew = g.score > best;
     if (isNew) saveBest(g.score);
-    const rank = RANKS.find(r => g.score >= r.min);
-    document.getElementById('rRank').textContent = `称号：${rank.name}`;
-    document.getElementById('rScore').textContent = g.score.toLocaleString();
-    document.getElementById('rCount').textContent = `${g.count} 枚`;
-    document.getElementById('rSpeed').textContent = `${(g.chops / (GAME_TIME + (g.continued ? CONTINUE_SEC : 0))).toFixed(1)} 回/秒`;
+    const rankName = tr('rank.' + RANKS.findIndex(r => g.score >= r.min));
+    document.getElementById('rRank').textContent = tr('res.rank', { r: rankName });
+    document.getElementById('rScore').textContent = fmt(g.score);
+    document.getElementById('rCount').textContent = tr('unit.slices', { n: g.count });
+    document.getElementById('rSpeed').textContent = tr('unit.cps', { n: (g.chops / (GAME_TIME + (g.continued ? CONTINUE_SEC : 0))).toFixed(1) });
     document.getElementById('rAvg').textContent = g.count ? `${(g.sumThick / g.count).toFixed(2)} mm` : '- mm';
     document.getElementById('rMin').textContent = g.count ? `${g.minThick.toFixed(2)} mm` : '- mm';
-    document.getElementById('rGod').textContent = `${g.god} 枚`;
+    document.getElementById('rGod').textContent = tr('unit.slices', { n: g.god });
     document.getElementById('rCombo').textContent = `${g.maxCombo}`;
     document.getElementById('rNew').style.display = isNew && g.score > 0 ? 'block' : 'none';
-    document.getElementById('bestResult').textContent = `自己ベスト: ${Math.max(best, g.score).toLocaleString()} 点`;
-    setupShare(rank.name);
+    document.getElementById('bestResult').textContent = tr('best', { n: fmt(Math.max(best, g.score)) });
+    setupShare(rankName);
     resultEl.classList.remove('hidden');
     sfx.fanfare(isNew || g.score >= 7000);
   }
@@ -509,10 +523,9 @@
   }
   let shareText = '';
   function setupShare(rankName) {
-    const avg = g.count ? `平均${(g.sumThick / g.count).toFixed(2)}mm` : '';
     // X で弾かれないよう、ちゃぶ台返しと同じく1行・絵文字なしの文にする
-    shareText = `きゅうり輪切り名人で${g.score.toLocaleString()}点！ 称号「${rankName}」` +
-      `${g.count ? ` ${g.count}枚を${avg}で輪切り` : ''} #きゅうり輪切り名人`;
+    const detail = g.count ? tr('share.detail', { n: g.count, avg: (g.sumThick / g.count).toFixed(2) }) : '';
+    shareText = tr('share.text', { score: fmt(g.score), rank: rankName, detail });
     const url = shareUrl();
     const enc = encodeURIComponent;
     document.getElementById('shareX').href =
@@ -532,10 +545,10 @@
     const url = shareUrl();
     const nativeShare = plugin('Share');
     if (nativeShare) {
-      try { await nativeShare.share({ title: 'きゅうり輪切り名人', text: shareText, url, dialogTitle: '結果をシェア' }); } catch (e) { /* キャンセル */ }
+      try { await nativeShare.share({ title: tr('game.name'), text: shareText, url, dialogTitle: tr('share.dialog') }); } catch (e) { /* キャンセル */ }
       return;
     }
-    const data = { title: 'きゅうり輪切り名人', text: shareText };
+    const data = { title: tr('game.name'), text: shareText };
     if (url) data.url = url;
     navigator.share(data).catch(() => {});
   });
@@ -545,8 +558,8 @@
     const text = shareText + (url ? `\n${url}` : '');
     const done = () => {
       sfx.click();
-      copyBtn.textContent = 'コピーしました';
-      setTimeout(() => { copyBtn.textContent = 'コピー'; }, 1600);
+      copyBtn.textContent = tr('share.copied');
+      setTimeout(() => { copyBtn.textContent = tr('share.copy'); }, 1600);
     };
     const fallback = () => {
       const ta = document.createElement('textarea');
@@ -575,7 +588,7 @@
         state = 'play';
         g.lastTick = Math.min(6, Math.ceil(g.time) + 1);
         sfx.go();
-        addPopup(g.resumed ? 'さいかい！' : 'はじめ！', '#d1452f', W / 2 - 60, 200, 56);
+        addPopup(tr(g.resumed ? 'pop.resume' : 'pop.start'), '#d1452f', W / 2 - 60, 200, 56);
         g.resumed = false;
       }
     } else if (state === 'play') {
@@ -936,7 +949,7 @@
     ctx.fillStyle = '#23561a';
     ctx.textAlign = 'right';
     ctx.font = 'bold 34px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
-    ctx.fillText(`${g.score.toLocaleString()} 点`, W - 84, 43);
+    ctx.fillText(tr('hud.pt', { n: fmt(g.score) }), W - 84, 43);
 
     // コンボ & 速度
     ctx.textAlign = 'left';
@@ -944,11 +957,11 @@
     if (g.combo >= 2) {
       const mult = Math.min(3, 1 + Math.floor(g.combo / 10) * 0.5);
       ctx.fillStyle = '#d1452f';
-      ctx.fillText(`${g.combo} コンボ${mult > 1 ? `  ×${mult}` : ''}`, 250, 32);
+      ctx.fillText(`${tr('hud.combo', { n: g.combo })}${mult > 1 ? `  ×${mult}` : ''}`, 250, 32);
     }
     ctx.fillStyle = '#5c6b4f';
     ctx.font = '16px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
-    ctx.fillText(`きゅうりの速さ ${speedNow().toFixed(1)} mm/秒   切った枚数 ${g.count} 枚`, 250, 58);
+    ctx.fillText(tr('hud.info', { speed: speedNow().toFixed(1), n: g.count }), 250, 58);
 
     // 厚さゲージ（いま切ったら何mmか）
     if (state === 'play' && g.cuke.enterT <= 0) {
@@ -957,7 +970,7 @@
       ctx.textAlign = 'center';
       ctx.font = 'bold 16px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
       ctx.fillStyle = GRADES[gi].color;
-      ctx.fillText(`いま切ると ${pending.toFixed(1)}mm`, KNIFE_X - 60, BOARD_Y + 28);
+      ctx.fillText(tr('hud.next', { mm: pending.toFixed(1) }), KNIFE_X - 60, BOARD_Y + 28);
     }
   }
 
@@ -976,7 +989,7 @@
     ctx.fillText(String(n), W / 2, H / 2 - 20);
     ctx.font = 'bold 26px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
     ctx.lineWidth = 6;
-    const hint = NATIVE ? '画面をタップして切る！' : 'クリック / タップ / スペースで切る！';
+    const hint = tr(NATIVE ? 'hint.tc' : 'hint.kb');
     ctx.strokeText(hint, W / 2, H / 2 + 90);
     ctx.fillStyle = '#23561a';
     ctx.fillText(hint, W / 2, H / 2 + 90);
@@ -994,9 +1007,9 @@
     ctx.scale(sc, sc);
     ctx.font = 'bold 90px "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif';
     ctx.lineWidth = 10; ctx.strokeStyle = '#fff';
-    ctx.strokeText('そこまで！', 0, 0);
+    ctx.strokeText(tr('pop.finish'), 0, 0);
     ctx.fillStyle = '#d1452f';
-    ctx.fillText('そこまで！', 0, 0);
+    ctx.fillText(tr('pop.finish'), 0, 0);
     ctx.restore();
   }
 
@@ -1042,6 +1055,6 @@
 
   resize();
   checkOrientation();
-  showBest();
+  renderTexts();
   requestAnimationFrame(loop);
 })();

@@ -23,86 +23,89 @@
 <body>
 <div id="rotate" hidden>
   <div class="phone" aria-hidden="true"></div>
-  <p>スマホを横向きにして<br>遊んでね！</p>
-  <small>画面の回転ロックがオンのときは、オフにしてください。</small>
-  <button id="portraitBtn" class="secondary">縦のまま遊ぶ</button>
+  <p data-i18n-html="rotate.msg">スマホを横向きにして<br>遊んでね！</p>
+  <small data-i18n="rotate.lock">画面の回転ロックがオンのときは、オフにしてください。</small>
+  <button id="portraitBtn" class="secondary" data-i18n="rotate.portrait">縦のまま遊ぶ</button>
 </div>
 <div id="wrap">
   <div id="stage">
     <canvas id="c"></canvas>
-    <button id="mute" title="効果音 ON/OFF" aria-label="効果音 ON/OFF">🔊</button>
+    <button id="mute" title="効果音 ON/OFF" aria-label="効果音 ON/OFF" data-i18n-title="mute">🔊</button>
 
     <div id="title" class="overlay">
       <div class="card">
-        <h1><span class="slice">🥒</span> きゅうり輪切り名人</h1>
-        <p class="sub">制限時間 <b>30秒</b>。すばやく、うすく、切りまくれ！</p>
+        <h1><span class="slice">🥒</span> <span data-i18n="game.name">きゅうり輪切り名人</span></h1>
+        <p class="sub" data-i18n-html="title.sub">制限時間 <b>30秒</b>。すばやく、うすく、切りまくれ！</p>
         <div class="rules">
-          ・きゅうりは包丁に向かって <b>どんどん流れてくる</b>（だんだん速くなる！）<br>
-          ・<b id="ctlText">クリック / タップ / スペースキー</b> で包丁をトン！<br>
-          ・連打が速いほど <b>うすい輪切り</b> になって高得点<br>
-          ・きゅうりの入れかわり中に切ると <b>空振り</b>でコンボが途切れる
-          <table class="grade">
+          <div id="rulesText">
+            ・きゅうりは包丁に向かって <b>どんどん流れてくる</b>（だんだん速くなる！）<br>
+            ・<b>クリック / タップ / スペースキー</b> で包丁をトン！<br>
+            ・連打が速いほど <b>うすい輪切り</b> になって高得点<br>
+            ・きゅうりの入れかわり中に切ると <b>空振り</b>でコンボが途切れる
+          </div>
+          <table class="grade" data-i18n-html="grade.table">
             <tr><td>〜1.0mm</td><td><b>神業</b> 100点</td><td>〜2.0mm</td><td><b>極うす</b> 60点</td></tr>
             <tr><td>〜3.5mm</td><td><b>うすい</b> 30点</td><td>〜6.0mm</td><td>ふつう 10点</td></tr>
             <tr><td>6.0mm〜</td><td>ぶあつい 2点</td><td colspan="2">3.5mm以下でコンボ継続！</td></tr>
           </table>
         </div>
-        <button id="startBtn">スタート！</button>
+        <button id="startBtn" data-i18n="title.start">スタート！</button>
         <div class="best" id="bestTitle"></div>
         <p class="legal">
           <span id="buildInfo"></span>
-          <a href="https://techgym.jp/privacy-policy/" target="_blank" rel="noopener">プライバシーポリシー</a>
-          <span id="adPrivacy" hidden>｜<a href="#" id="adPrivacyLink">広告の設定</a></span>
+          <a href="https://techgym.jp/privacy-policy/" data-i18n-href="url.privacy" target="_blank" rel="noopener" data-i18n="legal.privacy">プライバシーポリシー</a>
+          <span id="adPrivacy" hidden>｜<a href="#" id="adPrivacyLink" data-i18n="legal.adSettings">広告の設定</a></span>
         </p>
+        <p class="langSel"><button class="langBtn" data-lang="ja">日本語</button><button class="langBtn" data-lang="en">English</button></p>
       </div>
     </div>
 
     <div id="pauseOv" class="overlay hidden">
       <div class="card small">
-        <div class="rank">一時停止中</div>
-        <p class="sub">画面をタップすると再開します</p>
-        <button id="resumeBtn">さいかい</button>
+        <div class="rank" data-i18n="pause.head">一時停止中</div>
+        <p class="sub" data-i18n="pause.sub">画面をタップすると再開します</p>
+        <button id="resumeBtn" data-i18n="pause.btn">さいかい</button>
       </div>
     </div>
 
     <div id="continue" class="overlay hidden">
       <div class="card small">
-        <div class="rank">あと10秒！</div>
-        <p class="sub">広告を見ると、いまの点数のまま<b>10秒延長</b>できます（1回のみ）</p>
+        <div class="rank" data-i18n="cont.head">あと10秒！</div>
+        <p class="sub" data-i18n-html="cont.lead">広告を見ると、いまの点数のまま<b>10秒延長</b>できます（1回のみ）</p>
         <div class="btns">
-          <button id="contAdBtn">広告を見て延長する</button>
-          <button id="contNoBtn" class="secondary">結果を見る</button>
+          <button id="contAdBtn" data-i18n="cont.watch">広告を見て延長する</button>
+          <button id="contNoBtn" class="secondary" data-i18n="cont.giveUp">結果を見る</button>
         </div>
-        <p class="cont-timer"><span id="contSec">10</span> 秒後に結果へ</p>
+        <p class="cont-timer" data-i18n-html="cont.timer"><span id="contSec">10</span> 秒後に結果へ</p>
         <p class="cont-msg" id="contMsg" hidden></p>
       </div>
     </div>
 
     <div id="result" class="overlay hidden">
       <div class="card">
-        <div class="result-head" style="font-size:18px">しゅうりょう！</div>
+        <div class="result-head" style="font-size:18px" data-i18n="res.head">しゅうりょう！</div>
         <div class="rank" id="rRank"></div>
-        <div class="score"><span id="rScore">0</span><span style="font-size:0.4em"> 点</span></div>
-        <div id="rNew" class="new-record" style="display:none">★ 自己ベスト更新！ ★</div>
+        <div class="score"><span id="rScore">0</span><span style="font-size:0.4em" data-i18n="res.pt"> 点</span></div>
+        <div id="rNew" class="new-record" style="display:none" data-i18n="res.new">★ 自己ベスト更新！ ★</div>
         <div class="stats">
-          <div>切った枚数<b id="rCount">0 枚</b></div>
-          <div>包丁さばき<b id="rSpeed">0 回/秒</b></div>
-          <div>平均の厚さ<b id="rAvg">- mm</b></div>
-          <div>いちばん薄い<b id="rMin">- mm</b></div>
-          <div>神業の数<b id="rGod">0 枚</b></div>
-          <div>最大コンボ<b id="rCombo">0</b></div>
+          <div><span data-i18n="res.count">切った枚数</span><b id="rCount">0 枚</b></div>
+          <div><span data-i18n="res.speed">包丁さばき</span><b id="rSpeed">0 回/秒</b></div>
+          <div><span data-i18n="res.avg">平均の厚さ</span><b id="rAvg">- mm</b></div>
+          <div><span data-i18n="res.min">いちばん薄い</span><b id="rMin">- mm</b></div>
+          <div><span data-i18n="res.god">神業の数</span><b id="rGod">0 枚</b></div>
+          <div><span data-i18n="res.combo">最大コンボ</span><b id="rCombo">0</b></div>
         </div>
         <div class="btns">
-          <button id="retryBtn">もう一回！</button>
-          <button id="titleBtn" class="secondary">タイトルへ</button>
+          <button id="retryBtn" data-i18n="res.retry">もう一回！</button>
+          <button id="titleBtn" class="secondary" data-i18n="res.title">タイトルへ</button>
         </div>
-        <div class="share" aria-label="結果をシェア">
-          <span class="share-label">結果をシェア</span>
-          <button id="shareMore" class="sbtn more" type="button" hidden>シェア</button>
-          <a id="shareX" class="sbtn x" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.9 2H22l-6.8 7.8L23 22h-6.2l-4.9-6.4L6.3 22H3.2l7.3-8.3L1 2h6.3l4.4 5.9L18.9 2Zm-1.1 18.1h1.7L6.3 3.8H4.5l13.3 16.3Z"/></svg>ポスト</a>
+        <div class="share">
+          <span class="share-label" data-i18n="share.label">結果をシェア</span>
+          <button id="shareMore" class="sbtn more" type="button" hidden data-i18n="share.more">シェア</button>
+          <a id="shareX" class="sbtn x" href="#" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.9 2H22l-6.8 7.8L23 22h-6.2l-4.9-6.4L6.3 22H3.2l7.3-8.3L1 2h6.3l4.4 5.9L18.9 2Zm-1.1 18.1h1.7L6.3 3.8H4.5l13.3 16.3Z"/></svg><span data-i18n="share.post">ポスト</span></a>
           <a id="shareLine" class="sbtn line" href="#" target="_blank" rel="noopener">LINE</a>
           <a id="shareFb" class="sbtn fb" href="#" target="_blank" rel="noopener">Facebook</a>
-          <button id="shareCopy" class="sbtn copy" type="button">コピー</button>
+          <button id="shareCopy" class="sbtn copy" type="button" data-i18n="share.copy">コピー</button>
         </div>
         <div class="best" id="bestResult"></div>
       </div>
@@ -110,6 +113,7 @@
   </div>
 </div>
 
+<script src="js/i18n.js"></script>
 <script src="js/build-info.js"></script>
 <script src="js/ads-config.js"></script>
 <script src="js/ads.js"></script>

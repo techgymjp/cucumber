@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- 端末の言語が日本語のときのアプリ名 -->
+    <string name="app_name">きゅうり輪切り名人</string>
+    <string name="title_activity_main">きゅうり輪切り名人</string>
+</resources>
