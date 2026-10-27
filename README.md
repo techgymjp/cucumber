@@ -56,7 +56,7 @@ JET STRIKE（techgymjp/jet-fighter）の iOS 版と同じ構成です。Mac で�
 - Bundle ID：`jp.techgym.cucumber`（Capacitor 8、iPhone 専用・横画面固定）
 - `npm run ios:sync`（テスト広告）／`npm run ios:release`（本番広告。App Store 用）／`npm run ios:open`（Xcode で開く）
 - GitHub Actions（`.github/workflows/ios.yml`）で、push のたびにシミュレーター向けに署名なしでビルドできるかを確認します
-- AdMob の iOS 用 ID は `ios/App/App/Info.plist`（アプリ ID）と `js/ads.js`（広告ユニット ID）にあります
+- AdMob の iOS 用 ID（アプリ ID とバナー・インタースティシャル・リワード）は `ios/App/App/Info.plist` と `js/ads.js` に設定済みです
 - App Store 用の画像：`docs/store/ios/`（スクリーンショット 2622×1206 日英各 4 枚、ヘッダ 3840×1646、検索結果 3840×2560）
 
 ## ファイル構成
