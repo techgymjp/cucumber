@@ -1323,6 +1323,8 @@
       drawParticles();
     }
     ctx.restore();
+    // ストア用の画像（文字を入れない App Store のヘッダなど）を撮るときは、時間・点数などの表示を消す
+    if (window.__storeShot) return;
     if (g && state !== 'title') {
       drawPopups();
       drawHUD();

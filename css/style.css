@@ -24,6 +24,9 @@ html, body {
   position: relative;
   width: 100vw; height: calc(100vh - var(--banner-h, 0px)); height: calc(100dvh - var(--banner-h, 0px));
   display: flex; align-items: center; justify-content: center;
+  /* iPhone を横にしたときのカメラの切り欠き（セーフエリア）にゲーム画面がかからないようにする */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 /* ゲーム画面は画面いっぱい（縦横比に合わせて台所を広げて描く） */
 #stage {

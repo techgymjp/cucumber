@@ -50,6 +50,15 @@ npm run build          # www/ に Web ファイルをまとめる
 npx cap sync android   # Android プロジェクトへコピー
 ```
 
+## iOS アプリ
+JET STRIKE（techgymjp/jet-fighter）の iOS 版と同じ構成です。Mac での作業手順は `docs/IOS_BUILD.md` にあります。
+
+- Bundle ID：`jp.techgym.cucumber`（Capacitor 8、iPhone 専用・横画面固定）
+- `npm run ios:sync`（テスト広告）／`npm run ios:release`（本番広告。App Store 用）／`npm run ios:open`（Xcode で開く）
+- GitHub Actions（`.github/workflows/ios.yml`）で、push のたびにシミュレーター向けに署名なしでビルドできるかを確認します
+- AdMob の iOS 用 ID は `ios/App/App/Info.plist`（アプリ ID）と `js/ads.js`（広告ユニット ID）にあります
+- App Store 用の画像：`docs/store/ios/`（スクリーンショット 2622×1206 日英各 4 枚、ヘッダ 3840×1646、検索結果 3840×2560）
+
 ## ファイル構成
 
 ```
@@ -63,6 +72,7 @@ js/build-info.js       バージョン表示（ビルド時に生成）
 scripts/build-web.js   www/ を作るスクリプト
 assets/                アイコン・起動画面の元画像
 android/               Android プロジェクト
+ios/                   iOS プロジェクト（Xcode）
 ogp.png                SNS シェア用の画像
 ```
 
