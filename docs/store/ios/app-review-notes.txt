@@ -1,0 +1,29 @@
+App Review に関する情報（App Store Connect の「配信」タブ → バージョン 1.0.0 → 「App Review に関する情報」）
+
+[サインイン情報]
+「サインインが必要」のチェックを外す（ログイン不要）
+
+[連絡先情報]
+名前・電話番号・メールアドレスを入力する
+
+[メモ]（下の英文をそのまま貼り付ける。初回の審査で「Guideline 2.1 - Information Needed」が来たら、同じ文で返信する）
+
+1. Screen recording: A screen recording on a physical iPhone (latest iOS), starting from app launch, is attached.
+2. Purpose and audience: A casual single-player game for anyone 13 and older. Players tap (or press and hold) to chop vegetables as thinly and quickly as possible within 30 seconds.
+3. How to use: No login or account is required. Tap "Start", then tap the screen to chop. Eggplant, carrot, burdock and daikon need a press and hold until the knife cuts through.
+4. External services: Google AdMob shows banner, interstitial and rewarded ads. App Tracking Transparency is requested at launch, after Google's consent message where required. The share button uses the standard iOS share sheet. No other third-party services, no in-app purchases.
+5. Regional differences: None, except that Google's consent message (UMP) appears only in regions that require it (EEA, UK, etc.).
+6. Regulated content / third-party material: None. All graphics and sounds were created for this app (sounds are synthesized in code).
+
+[添付ファイル]
+実機（iPhone）で撮った画面録画（アプリの起動から）を添付する。
+大きすぎて添付できないときは、720p にエンコードし直すか、Google ドライブの共有リンクを 1. の文の後ろに貼る。
+
+---
+（参考：メモの日本語訳）
+1. 画面録画：実機の iPhone（最新の iOS）で、アプリの起動から撮った画面録画を添付しています。
+2. 目的と対象：13 歳以上の誰でも遊べる、1 人用のカジュアルゲームです。30 秒のあいだに、タップ（または長押し）で野菜をできるだけ薄く速く切ります。
+3. 使い方：ログインやアカウントは不要です。「スタート」を押し、画面をタップして切ります。茄子・人参・牛蒡・大根は、切れるまで長押しします。
+4. 外部サービス：Google AdMob でバナー・インタースティシャル・リワード広告を表示します。起動時に、必要な地域では Google の同意メッセージのあとで、App Tracking Transparency の確認を行います。シェアボタンは iOS 標準の共有メニューを使います。そのほかの外部サービスやアプリ内課金はありません。
+5. 地域による違い：Google の同意メッセージ（UMP）が、必要な地域（EEA・英国など）でだけ表示される以外はありません。
+6. 規制対象のコンテンツ・第三者の素材：ありません。絵と音はすべてこのアプリのために作りました（音はプログラムで合成しています）。
