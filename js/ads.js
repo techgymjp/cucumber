@@ -21,11 +21,11 @@ const Ads = (() => {
         rewarded: 'ca-app-pub-3940256099942544/1712485313',
         banner: 'ca-app-pub-3940256099942544/2435281174',
       },
-      // iOS 用の広告ユニットを AdMob で作ったら ID を入れる
+      // iOS 用の広告ユニット（空の種類は、AdMob で作ったら ID を入れる）
       production: {
         interstitial: '',
         rewarded: '',
-        banner: '',
+        banner: 'ca-app-pub-6411535997477460/5006703998',
       },
     },
   };
