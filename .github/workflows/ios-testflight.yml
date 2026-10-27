@@ -1,0 +1,156 @@
+name: iOS TestFlight upload
+
+# 既定のブランチに push すると、本番広告の設定で iOS 版をビルドし、App Store Connect（TestFlight）にアップロードする。
+# Secrets（IOS_DIST_CERT_P12_BASE64 など 5 つ）がないときは何もしない。審査への提出は App Store Connect で行う
+on:
+  push:
+    paths:
+      - 'index.html'
+      - 'css/**'
+      - 'js/**'
+      - 'ios/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/ios-testflight.yml'
+  workflow_dispatch:
+
+# 同じブランチで新しい push があったら、古いビルドは取り消して最新だけをアップロードする
+concurrency:
+  group: ios-testflight-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  upload:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      HAS_SECRETS: ${{ secrets.ASC_KEY_P8_BASE64 != '' && secrets.IOS_DIST_CERT_P12_BASE64 != '' }}
+      BUNDLE_ID: jp.techgym.cucumber
+      TEAM_ID: GNM3VTX9YG
+      PROFILE_NAME: cucumber App Store CI
+    steps:
+      - name: Skip when the secrets are not set
+        if: env.HAS_SECRETS != 'true'
+        run: echo "iOS の Secrets が登録されていないので、アップロードはしません（docs/IOS_BUILD.md の 7 章）"
+
+      - uses: actions/checkout@v4
+        if: env.HAS_SECRETS == 'true'
+
+      - uses: actions/setup-node@v4
+        if: env.HAS_SECRETS == 'true'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        if: env.HAS_SECRETS == 'true'
+        timeout-minutes: 5
+        run: |
+          npm ci
+          python3 -m pip install --quiet --break-system-packages pyjwt cryptography || python3 -m pip install --quiet pyjwt cryptography
+
+      # ビルド番号は Actions の実行回数から作る。手元の Mac からアップロードしたビルド（1, 2, …）と
+      # ぶつからないよう 100 を足す（App Store Connect では、同じバージョンのビルド番号は前より大きくする）
+      - name: Set version and build number
+        if: env.HAS_SECRETS == 'true'
+        run: |
+          echo "VERSION_NAME=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
+          echo "BUILD_NUMBER=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
+      # App Store 用なので本番の広告 ID を使う（npm run ios:release と同じ）
+      - name: Copy web assets into the iOS project (production ads)
+        if: env.HAS_SECRETS == 'true'
+        run: |
+          ADMOB_MODE=production VERSION_CODE="$BUILD_NUMBER" npm run build
+          npx cap sync ios
+
+      - name: Install the distribution certificate and the API key
+        if: env.HAS_SECRETS == 'true'
+        env:
+          P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          KEYCHAIN="$RUNNER_TEMP/ci.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 16)"
+          echo "$P12_BASE64" | base64 --decode > "$RUNNER_TEMP/dist.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/dist.p12" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN" > /dev/null
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          security find-identity -v -p codesigning "$KEYCHAIN"
+          mkdir -p "$RUNNER_TEMP/private_keys"
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$RUNNER_TEMP/private_keys/AuthKey_$ASC_KEY_ID.p8"
+          echo "KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
+          echo "ASC_KEY_PATH=$RUNNER_TEMP/private_keys/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
+
+      - name: Prepare the App Store provisioning profile
+        if: env.HAS_SECRETS == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          P12_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          P12_PATH: ${{ runner.temp }}/dist.p12
+        run: python3 scripts/ios-profile.py
+
+      # 署名の設定は App ターゲットだけに入れる（コマンドラインで渡すと Swift Package の部品にもかかって失敗するため）
+      - name: Switch the app target to manual signing for the App Store
+        if: env.HAS_SECRETS == 'true'
+        working-directory: ios/App
+        run: |
+          sed -i '' \
+            -e 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/' \
+            -e "s/DEVELOPMENT_TEAM = $TEAM_ID;/DEVELOPMENT_TEAM = $TEAM_ID; CODE_SIGN_IDENTITY = \"Apple Distribution\"; PROVISIONING_PROFILE_SPECIFIER = \"$PROFILE_NAME\";/" \
+            -e "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/" \
+            -e "s/MARKETING_VERSION = [0-9.]*;/MARKETING_VERSION = $VERSION_NAME;/" \
+            App.xcodeproj/project.pbxproj
+          grep -n "CODE_SIGN_STYLE\|PROVISIONING_PROFILE_SPECIFIER\|CURRENT_PROJECT_VERSION\|MARKETING_VERSION" App.xcodeproj/project.pbxproj
+
+      - name: Archive
+        if: env.HAS_SECRETS == 'true'
+        working-directory: ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            archive | tail -60
+
+      - name: Upload to App Store Connect (TestFlight)
+        if: env.HAS_SECRETS == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict><key>$BUNDLE_ID</key><string>$PROFILE_NAME</string></dict>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
+            -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" | tail -60
+          echo "Uploaded version $VERSION_NAME (build $BUILD_NUMBER). It appears in TestFlight in 10-30 minutes." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove the keychain and the keys
+        if: always() && env.HAS_SECRETS == 'true'
+        run: |
+          [ -n "$KEYCHAIN" ] && security delete-keychain "$KEYCHAIN" || true
+          rm -rf "$RUNNER_TEMP/dist.p12" "$RUNNER_TEMP/private_keys"

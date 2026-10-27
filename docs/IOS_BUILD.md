@@ -180,7 +180,13 @@ JET STRIKE の `docs/IOS_BUILD.md` 7 章と同じです。App Store Connect の 
 | `ASC_ISSUER_ID` | Issuer ID |
 | `ASC_KEY_P8_BASE64` | API キー（.p8）を変換した文字列（`base64 -i AuthKey_XXXXXXXXXX.p8 \| tr -d '\n' \| pbcopy`） |
 
-登録が終わったら、Claude Code に「iOS の自動アップロードのワークフローを作って」と頼みます。
+登録済みです（2026 年 10 月）。`.github/workflows/ios-testflight.yml` が、既定のブランチへの push のたびに次のことを行います。
+
+1. 本番の広告 ID でゲームを iOS のプロジェクトにコピーする（`npm run ios:release` と同じ）
+2. Secrets の証明書を一時的なキーチェーンに入れ、App Store Connect API で配布用のプロビジョニングプロファイル（名前：`cucumber App Store CI`）を用意する（初回に作り、2 回目以降は使い回す）
+3. Archive して App Store Connect（TestFlight）にアップロードする。ビルド番号は「Actions の実行回数 + 100」で自動的に上がる（手元の Mac からアップロードするときは 100 未満の番号を使う）
+
+結果は GitHub の「Actions」タブの「iOS TestFlight upload」で見られます。10〜30 分ほどで TestFlight にビルドが表示されます。審査への提出は、これまでどおり App Store Connect で行います。手動で動かすときは「Run workflow」を押します。
 
 **注意**：証明書（.p12）、そのパスワード、API キー（.p8）は、チャット・AI へのアップロード・リポジトリへのコミットで**絶対に共有しない**でください。
 
