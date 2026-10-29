@@ -79,6 +79,7 @@ button {
 button:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--green-dark); }
 button.secondary { background: #8a8a7a; box-shadow: 0 5px 0 #55554a; font-size: clamp(14px, 2.4vw, 18px); padding: 10px 26px; }
 .best { margin-top: 10px; font-size: 14px; opacity: 0.8; }
+.best a { color: inherit; padding: 6px 2px; }
 .legal { margin: 8px 0 0; font-size: 12px; opacity: 0.75; }
 #title .card { max-width: 780px; }
 .vegSel { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 0 0 12px; }

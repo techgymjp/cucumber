@@ -32,6 +32,8 @@
 Web Audio API でその場で合成しています（シャキッ＋トン、空振り、神業のキラーン、コンボ、カウントダウン、終了ファンファーレなど）。右上のボタンで ON/OFF できます。
 
 ## Android アプリ
+Google Play で公開中：https://play.google.com/store/apps/details?id=jp.techgym.cucumber（Web 版のタイトル・結果画面からもリンクしています）
+
 JET STRIKE（techgymjp/jet-fighter）の `docs/ANDROID_PORTING.md` と同じ構成です。
 
 - パッケージ名：`jp.techgym.cucumber`（Capacitor 8、横画面固定）
