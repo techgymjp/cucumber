@@ -192,6 +192,14 @@ JET STRIKE の `docs/IOS_BUILD.md` 7 章と同じです。App Store Connect の 
 
 ---
 
+## Web 版だけの部分をアプリに入れない（Guideline 5.6 対策）
+
+ちゃぶ台返しリメンバーの iOS 版が「Guideline 5.6 - Developer Code of Conduct（審査中に隠した機能がある）」でリジェクトされました。Web 版だけの Google Play へのリンクと、それをアプリで隠す処理が、アプリの中に入っていたためと考えられます。
+このゲームでは、Web 版だけの部分を目印で囲み、アプリ用のビルド（`npm run build:app`）で取り除いています（README の「Android アプリ」を参照）。`ios:sync` / `ios:release` と GitHub Actions はアプリ用のビルドを使うので、普段の手順は変わりません。
+Web 版だけの部分（ストアへのリンク、端末・日付・地域で出し分ける機能、撮影用の仕掛けなど）を足すときは、必ず目印で囲んでください。
+
+---
+
 ## つまずきやすいところ
 
 | 症状 | 対処 |

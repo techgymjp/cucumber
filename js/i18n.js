@@ -21,7 +21,9 @@ const I18N = (() => {
       'title.start': 'スタート！',
       'legal.privacy': 'プライバシーポリシー',
       'legal.adSettings': '広告の設定',
+      // web-only:start（Web 版だけ。アプリには入れない）
       'store.play': 'Android アプリ版（Google Play）',
+      // web-only:end
       'url.privacy': 'https://techgym.jp/privacy-policy/',
       'best': '自己ベスト: {n} 点',
       'pause.head': '一時停止中',
@@ -105,7 +107,9 @@ const I18N = (() => {
       'title.start': 'Start!',
       'legal.privacy': 'Privacy Policy',
       'legal.adSettings': 'Ad settings',
+      // web-only:start
       'store.play': 'Android app on Google Play',
+      // web-only:end
       'url.privacy': 'https://techgym.jp/privacy-policy-en/',
       'best': 'Best: {n} pts',
       'pause.head': 'Paused',

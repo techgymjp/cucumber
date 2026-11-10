@@ -48,9 +48,11 @@ JET STRIKE（techgymjp/jet-fighter）の `docs/ANDROID_PORTING.md` と同じ構�
 
 ```
 npm ci
-npm run build          # www/ に Web ファイルをまとめる
-npx cap sync android   # Android プロジェクトへコピー
+npm run build          # Web 版（Vercel）用に www/ を作る
+npm run android:sync   # アプリ用に www/ を作り（npm run build:app）、Android プロジェクトへコピー
 ```
+
+Web 版だけの部分（Google Play へのリンク、ストア画像の撮影用のフック）は、HTML では `<!-- web-only -->` … `<!-- /web-only -->`、JS では `// web-only:start` … `// web-only:end` で囲んであります。アプリ用のビルド（`npm run build:app`。`android:sync` / `ios:sync` / `ios:release` と GitHub Actions が使う）では、この範囲を取り除き、`play.google.com` などが残っていたらビルドを止めます。iOS の審査で、アプリの中で隠れている機能が「審査中に隠した機能」（Guideline 5.6）と見なされないようにするためです。Web 版だけの部分を足すときは、必ずこの目印で囲んでください。
 
 ## iOS アプリ
 JET STRIKE（techgymjp/jet-fighter）の iOS 版と同じ構成です。Mac での作業手順は `docs/IOS_BUILD.md` にあります。

@@ -56,7 +56,9 @@
           <span id="buildInfo"></span>
           <a href="https://techgym.jp/privacy-policy/" data-i18n-href="url.privacy" target="_blank" rel="noopener" data-i18n="legal.privacy">プライバシーポリシー</a>
           <span id="adPrivacy" hidden>｜<a href="#" id="adPrivacyLink" data-i18n="legal.adSettings">広告の設定</a></span>
+          <!-- web-only: Web 版だけ。アプリには入れない（scripts/build-web.js が npm run build:app で消す） -->
           <span class="storeLinks" hidden>｜<a class="playLink" href="https://play.google.com/store/apps/details?id=jp.techgym.cucumber" target="_blank" rel="noopener" data-i18n="store.play">Android アプリ版（Google Play）</a></span>
+          <!-- /web-only -->
         </p>
         <p class="langSel"><button class="langBtn" data-lang="ja">日本語</button><button class="langBtn" data-lang="en">English</button></p>
       </div>
@@ -122,7 +124,7 @@
           <a id="shareFb" class="sbtn fb" href="#" target="_blank" rel="noopener">Facebook</a>
           <button id="shareCopy" class="sbtn copy" type="button" data-i18n="share.copy">コピー</button>
         </div>
-        <div class="best"><span id="bestResult"></span><span class="storeLinks" hidden>｜<a class="playLink" href="https://play.google.com/store/apps/details?id=jp.techgym.cucumber" target="_blank" rel="noopener" data-i18n="store.play">Android アプリ版（Google Play）</a></span></div>
+        <div class="best"><span id="bestResult"></span><!-- web-only --><span class="storeLinks" hidden>｜<a class="playLink" href="https://play.google.com/store/apps/details?id=jp.techgym.cucumber" target="_blank" rel="noopener" data-i18n="store.play">Android アプリ版（Google Play）</a></span><!-- /web-only --></div>
       </div>
     </div>
   </div>

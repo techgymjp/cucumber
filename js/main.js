@@ -563,15 +563,20 @@
   // アプリではキー操作の案内を出さない
   // 言語に合わせてタイトル画面の文言を出す（アプリではキー操作の案内を出さない）
   const vegName = v => tr('veg.' + v.id);
-  // Web 版だけ、アプリのストアへのリンクを出す（表示言語に合わせたストアのページを開く）
+  // web-only:start
+  // Web 版だけ、アプリのストアへのリンクを出す（表示言語に合わせたストアのページを開く）。
+  // アプリ用のビルド（npm run build:app）ではこの部分ごと取り除くので、アプリには入らない
   const PLAY_URL = 'https://play.google.com/store/apps/details?id=jp.techgym.cucumber';
   function renderStoreLinks() {
-    document.querySelectorAll('.storeLinks').forEach(el => { el.hidden = NATIVE; });
+    document.querySelectorAll('.storeLinks').forEach(el => { el.hidden = false; });
     document.querySelectorAll('.playLink').forEach(a => { a.href = `${PLAY_URL}&hl=${I18N.lang}`; });
   }
+  // web-only:end
   function renderTexts() {
     I18N.apply();
+    // web-only:start
     renderStoreLinks();
+    // web-only:end
     let rules = tr('title.rules', { veg: tr('veg.lc.' + veg.id), ctl: tr(NATIVE ? 'ctl.tc' : 'ctl.kb') });
     if (veg.press) rules += tr('rule.press', { veg: tr('veg.lc.' + veg.id), why: tr('why.' + veg.id), sec: veg.press / 1000 });
     if (veg.mul > 1) rules += tr('rule.mul', { veg: tr('veg.lc.' + veg.id), m: veg.mul });
@@ -1330,8 +1335,10 @@
       drawParticles();
     }
     ctx.restore();
-    // ストア用の画像（文字を入れない App Store のヘッダなど）を撮るときは、時間・点数などの表示を消す
+    // web-only:start
+    // ストア用の画像（文字を入れない App Store のヘッダなど）を撮るときは、時間・点数などの表示を消す（撮影は Web 版で行う）
     if (window.__storeShot) return;
+    // web-only:end
     if (g && state !== 'title') {
       drawPopups();
       drawHUD();
