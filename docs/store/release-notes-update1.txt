@@ -1,0 +1,10 @@
+<ja-JP>
+・より多くの端末でインストールできるようにしました
+・広告の表示を改善しました
+・画面表示の細かな調整と、動作の安定性を向上しました
+</ja-JP>
+<en-US>
+• Available on more devices
+• Improved ad display
+• Minor display tweaks and stability improvements
+</en-US>
