@@ -83,7 +83,7 @@ npm run ios:release   # 本番の広告 ID でコピーする（ここが ios:sy
 npm run ios:open
 ```
 
-1. Xcode の左で「App」→「General」→「Identity」を開き、**Build の番号を前回より大きくする**（初回は 1。アップロードのたびに 2、3…と上げる。同じ番号は二度アップロードできない）。Version は 1.0.0
+1. Xcode の左で「App」→「General」→「Identity」を開き、**Build の番号を前回より大きくする**（初回は 1。アップロードのたびに 2、3…と上げる。同じ番号は二度アップロードできない）。Version は `package.json` の version（いまは 1.0.1）
 2. 上部の実行先を「**Any iOS Device (arm64)**」にする
 3. メニューの「Product」→「**Archive**」（「Product」は画面最上部のメニューバー。全画面表示だと隠れるので、マウスを画面の上端に動かす）
 4. 終わると Organizer が開くので、「**Distribute App**」→「**App Store Connect**」→「Upload」で進める（途中の確認は既定のまま「Next」でよい。「Xcode Cloud can automate…」は「Remind Me Later」で閉じてよい）
@@ -109,7 +109,7 @@ npm run ios:open
 
 ## 5. App Store Connect で審査に出す
 
-「配信」タブ（iOS App のバージョン 1.0.0）で入力します。バージョンが「1.0」になっていたら **1.0.0 に直して保存**します（違っているとアップロードしたビルドを選べません）。
+「配信」タブ（iOS App のバージョン。初回は 1.0.0、いまは 1.0.1）で入力します。App Store Connect のバージョンは、アプリのバージョン（`package.json` の version）とそろえます。違っているとアップロードしたビルドを選べません。
 
 | 項目 | 入力内容 |
 | --- | --- |
@@ -209,7 +209,7 @@ Web 版だけの部分（ストアへのリンク、端末・日付・地域で�
 | 実行先に iPhone が出ない | ケーブルをつなぎ直し、iPhone で「信頼」を許可。デベロッパモードをオンにする |
 | 実行先に「iOS 26.x Not Installed」と出る | 「Get」で iOS のシミュレーターと部品をダウンロードする（8 GB ほど。Archive にも必要） |
 | ビルドが古いゲームのまま | `npm run ios:sync`（または `ios:release`）を実行し忘れている。`git pull` してから実行し直す |
-| アップロードしたビルドが選べない | App Store Connect のバージョンを 1.0.0 に直して保存する |
+| アップロードしたビルドが選べない | App Store Connect のバージョンを `package.json` の version（例：1.0.1）にそろえて保存する |
 | 「審査用に追加できません」 | 「コンテンツの配信権」と「アプリのプライバシー」のプライバシーポリシー URL が入っているか確認する |
 | 広告が出ない（本番） | `js/ads.js` の iOS の production と `Info.plist` の `GADApplicationIdentifier` に本物の ID が入っているか確認する |
 | App Store の審査で「Xcode が古い」と言われる | Xcode を最新版に更新してから Archive し直す |

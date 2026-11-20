@@ -1,6 +1,6 @@
 {
   "name": "cucumber",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "きゅうり輪切り名人 きゅうりを薄く速く輪切りにするゲーム（Web / Android / iOS）",
   "scripts": {
