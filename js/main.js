@@ -567,9 +567,12 @@
   // Web 版だけ、アプリのストアへのリンクを出す（表示言語に合わせたストアのページを開く）。
   // アプリ用のビルド（npm run build:app）ではこの部分ごと取り除くので、アプリには入らない
   const PLAY_URL = 'https://play.google.com/store/apps/details?id=jp.techgym.cucumber';
+  const APP_STORE_URL_JA = 'https://apps.apple.com/jp/app/id6827720843';
+  const APP_STORE_URL_EN = 'https://apps.apple.com/us/app/id6827720843';
   function renderStoreLinks() {
     document.querySelectorAll('.storeLinks').forEach(el => { el.hidden = false; });
     document.querySelectorAll('.playLink').forEach(a => { a.href = `${PLAY_URL}&hl=${I18N.lang}`; });
+    document.querySelectorAll('.appStoreLink').forEach(a => { a.href = I18N.lang === 'ja' ? APP_STORE_URL_JA : APP_STORE_URL_EN; });
   }
   // web-only:end
   function renderTexts() {

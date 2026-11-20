@@ -55,6 +55,8 @@ npm run android:sync   # アプリ用に www/ を作り（npm run build:app）�
 Web 版だけの部分（Google Play へのリンク、ストア画像の撮影用のフック）は、HTML では `<!-- web-only -->` … `<!-- /web-only -->`、JS では `// web-only:start` … `// web-only:end` で囲んであります。アプリ用のビルド（`npm run build:app`。`android:sync` / `ios:sync` / `ios:release` と GitHub Actions が使う）では、この範囲を取り除き、`play.google.com` などが残っていたらビルドを止めます。iOS の審査で、アプリの中で隠れている機能が「審査中に隠した機能」（Guideline 5.6）と見なされないようにするためです。Web 版だけの部分を足すときは、必ずこの目印で囲んでください。
 
 ## iOS アプリ
+App Store で公開中：https://apps.apple.com/jp/app/id6827720843（Web 版のタイトル・結果画面からもリンクしています）
+
 JET STRIKE（techgymjp/jet-fighter）の iOS 版と同じ構成です。Mac での作業手順は `docs/IOS_BUILD.md` にあります。
 
 - Bundle ID：`jp.techgym.cucumber`（Capacitor 8、iPhone 専用・横画面固定）
